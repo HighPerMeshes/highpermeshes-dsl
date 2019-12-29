@@ -1,0 +1,14 @@
+get_filename_component(HighPerMeshes_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+include(CMakeFindDependencyMacro)
+
+list(APPEND CMAKE_MODULE_PATH ${HighPerMeshes_CMAKE_DIR})
+
+# Propagates the needed dependencies to the user of our library
+find_dependency(METIS REQUIRED)
+list(REMOVE_AT CMAKE_MODULE_PATH -1)
+
+if(NOT TARGET HighPerMeshes::HighPerMeshes)
+    include("${HighPerMeshes_CMAKE_DIR}/HighPerMeshesTargets.cmake")
+endif()
+
+set(HighPerMeshes_LIBRARIES HighPerMeshes::HighPerMeshes)
