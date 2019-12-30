@@ -1,0 +1,28 @@
+name: HighPerMeshes
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: install gcc-8
+      working-directory: ./CI/github
+      run: chmod +x ./install_gcc8.sh && ./install_gcc8.sh
+    - name: install google test suite
+      working-directory: ./CI/github
+      run: chmod +x ./install_googletest.sh && ./install_googletest.sh
+
+    - name: create build directory
+      run: mkdir -p build
+    - name: build
+      working-directory: ./build
+      run: cmake .. && make
+
+#    - name: run unit tests
+#      working-directory: ./build/bin/unit_test
+#      run: ./Test_A
