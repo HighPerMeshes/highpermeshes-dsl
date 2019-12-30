@@ -26,6 +26,6 @@ jobs:
       working-directory: ./build
       run: cmake .. && make
 
-#    - name: run unit tests
-#      working-directory: ./build/bin/unit_test
-#      run: ./Test_A
+    - name: run unit-tests
+      working-directory: ./build/tests
+      run: ./tests
