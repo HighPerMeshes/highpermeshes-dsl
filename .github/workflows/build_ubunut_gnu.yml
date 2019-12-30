@@ -16,6 +16,9 @@ jobs:
     - name: install google test suite
       working-directory: ./CI/github
       run: chmod +x ./install_googletest.sh && ./install_googletest.sh
+    - name: install metis
+      working-directory: ./CI/github
+      run: chmod +x ./install_metis.sh && ./install_metis.sh
 
     - name: create build directory
       run: mkdir -p build
