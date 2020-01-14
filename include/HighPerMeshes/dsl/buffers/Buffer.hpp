@@ -74,6 +74,9 @@ namespace HPM
 
         std::size_t GetSize() const { return data.size(); }
 
+        auto * Data() { return data.data(); }
+        const auto * Data() const { return data.data(); }
+
       public:
         std::vector<T, Allocator> data;
         const MeshT& mesh;

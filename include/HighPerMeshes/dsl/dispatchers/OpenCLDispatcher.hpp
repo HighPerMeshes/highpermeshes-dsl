@@ -71,9 +71,14 @@ class OpenCLDispatcher : public Dispatcher<OpenCLDispatcher>
     {
         std::ifstream sourceFile("kernels.cl");
         std::string sourceCode{
-            "void kernel kernel0(global const int * mesh_info, int mesh_info_size, global int* buf){"
-            " buf[get_global_id(0)]= get_global_id(0) + mesh_info[0];"
-            "}"};
+            "constant size_t dofs[4] = { 0, 0, 1, 1 };\n"
+            "size_t get_index(global const int * mesh_info, size_t dimension, size_t cell_dimension, size_t index) { size_t offset = 0;\n" 
+            "   for(size_t i = 0; i < cell_dimension - dimension; ++i) { offset += mesh_info[cell_dimension - i] * dofs[cell_dimension - i];  }\n"
+            "   return offset + dofs[dimension] * index; }\n"
+            "void kernel kernel0(global const int * mesh_info, int mesh_info_size, global int* buf, global const size_t* indices){\n"
+            "   size_t global_id = indices[get_global_id(0)];\n"  
+            "   buf[get_index(mesh_info, 3, 3, global_id)] = 1;\n"
+            "}\n"};
 
         /*std::istreambuf_iterator<char>(sourceFile), (std::istreambuf_iterator<char>())*/
         cl::Program::Sources source(1, std::make_pair(sourceCode.c_str(), sourceCode.length() + 1));
@@ -139,29 +144,36 @@ public:
                 auto kernel_name = self->make_kernel_name(n);
                 n++;
 
-                constexpr size_t size = 10;
-
                 cl::Kernel kernel{self->program, kernel_name.c_str()};
-                cl::NDRange global{size};
-                cl::NDRange local{1};
-
+                
                 kernel.setArg(0, mesh_info_buffer);
                 kernel.setArg(1, cl_int { CellDimension + 1 });
+                
+                auto * data = std::get<0>(mesh_loop.access_definitions).buffer->Data();
+                const size_t size = std::get<0>(mesh_loop.access_definitions).buffer->GetSize();
                 
                 cl::Buffer buffer{self->context, CL_MEM_WRITE_ONLY, size * sizeof(int)};
                 kernel.setArg(2, buffer);
 
+                const auto indices_size = mesh_loop.entity_range.GetIndices().size();
+
+                cl::Buffer indices { self->context, CL_MEM_READ_ONLY, indices_size * sizeof(size_t) };
+                self->queue.enqueueWriteBuffer(indices, CL_TRUE, 0, indices_size * sizeof(size_t), mesh_loop.entity_range.GetIndices().data());
+
+                kernel.setArg(3, indices);
+
+                cl::NDRange global{ indices_size };
+                cl::NDRange local{ 1 };
                 cl_int result = self->queue.enqueueNDRangeKernel(kernel, cl::NullRange, global, local);
                 if(result != CL_SUCCESS) {
                     std::cerr << "Enqueue failed with error code " << result << "\n";
                     std::exit(EXIT_FAILURE);
                 }
 
-                std::array<int, size> array;
-                self->queue.enqueueReadBuffer(buffer, CL_TRUE, 0, size * sizeof(int), array.data());
+                self->queue.enqueueReadBuffer(buffer, CL_TRUE, 0, size * sizeof(int), data);
 
-                for (auto &e : array)
-                    std::cout << e << " ";
+                for (auto i = 0; i < size; ++i)
+                    std::cout << data[i] << " ";
                 std::cout << std::endl;
             }(std::forward<MeshLoops>(mesh_loops)),
              ...);

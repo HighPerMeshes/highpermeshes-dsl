@@ -34,9 +34,13 @@ namespace HPM::mesh
     //! \tparam EntityDimension the dimension of the entities to be created
     //! \tparam MeshT the mesh type
     //!
-    template <std::size_t EntityDimension, typename MeshT>
+    template <std::size_t EntityDimension_, typename MeshT>
     class Range
     {
+        public:
+            static constexpr auto EntityDimension = EntityDimension_;
+        private:
+
         // Only the `PartitionedMesh` and the `Mesh` can instantiate this type: the index vector is always valid!
         template <typename, template <typename, typename, std::size_t, typename> typename, std::size_t>
         friend class PartitionedMesh;
