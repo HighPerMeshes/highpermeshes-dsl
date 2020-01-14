@@ -1,5 +1,7 @@
 #include <HighPerMeshes.hpp>
 
+#include <HighPerMeshes/dsl/dispatchers/OpenCLDispatcher.hpp>
+
 using namespace HPM;
 
 int main()
@@ -47,7 +49,7 @@ int main()
 
     // The dispatcher is used to dispatch kernels to some parallelization strategy.
     // In this case, we use a SequentialDispatcher to just execute the specified kernels
-    SequentialDispatcher dispatcher;
+    OpenCLDispatcher dispatcher;
 
 
     // The execute function executes a number of kernels for a number of time steps.
