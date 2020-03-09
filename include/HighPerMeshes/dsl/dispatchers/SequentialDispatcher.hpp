@@ -47,10 +47,10 @@ namespace HPM
         {
             for (auto step : range)
             {
-                ([step](auto&& mesh_loop) {
+                ([](auto&& mesh_loop, auto step) {
                     const auto& range = mesh_loop.entity_range;
                     mesh_loop.loop(range.GetEntities(), mesh_loop.access_definitions, [&mesh_loop, &step](auto&& entity, auto& localVectors) { mesh_loop.loop_body(entity, step, localVectors); });
-                } (std::forward<MeshLoops>(mesh_loops)),...);
+                } (std::forward<MeshLoops>(mesh_loops), step),...);
             }
         }
     };
