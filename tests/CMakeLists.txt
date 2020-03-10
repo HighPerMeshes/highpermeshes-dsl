@@ -1,9 +1,10 @@
 find_package(GTest REQUIRED)
 
 add_executable ( tests
-    Tests.cpp
+    Tests.cpp    
     drts/data_flow/GraphTest.cpp
     drts/data_flow/DataDependencyMaps.cpp 
+    dsl/data_access/GlobalDof.cpp
     dsl/mesh/PartitionedMesh.cpp
     dsl/loop_types/AccessDefinitionHelpers.cpp
     dsl/tmp/util/IsAccessDefinitionTest.cpp
