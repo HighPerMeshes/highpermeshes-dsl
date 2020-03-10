@@ -11,7 +11,7 @@
 #include <HighPerMeshes/dsl/meshes/PartitionedMesh.hpp>
 #include <HighPerMeshes/third_party/metis/Partitioner.hpp>
 
-using PartitionedMesh = HPM::mesh::PartitionedMesh<GridCoordinates, HPM::entity::Simplex>;
+using PartitionedMesh = HPM::mesh::PartitionedMesh<typename Grid<2>::CoordinateT, HPM::entity::Simplex>;
 using Partitioner = HPM::mesh::MetisPartitioner;
 
 template <size_t D>
@@ -19,14 +19,13 @@ using Dimension = std::integral_constant<size_t, D>;
 
 TEST(PartitionedMesh, BasicTest)
 {
-
-    Grid grid{9, 9};
+    Grid<2> grid{9, 9};
     auto numL1andL2 = std::pair{1, 1};
 
     auto nodes = grid.nodes;
-    auto simplexes = grid.simplexes;
+    auto simplices = grid.simplices;
 
-    PartitionedMesh mesh{std::move(nodes), std::move(simplexes), numL1andL2, 0, Partitioner{}};
+    PartitionedMesh mesh{std::move(nodes), std::move(simplices), numL1andL2, 0, Partitioner{}};
 
     auto EntityToL2P = [&mesh](size_t L2, auto Dimension) {
         for (auto entity : mesh.template L2PToEntity<Dimension.value>(L2))
@@ -62,13 +61,13 @@ TEST(PartitionedMesh, BasicTest)
 TEST(PartitionedMesh, TwoL1_OneL2)
 {
 
-    Grid grid{9, 9};
+    Grid<2> grid{9, 9};
     auto numL1andL2 = std::pair{2, 1};
 
     auto nodes = grid.nodes;
-    auto simplexes = grid.simplexes;
+    auto simplices = grid.simplices;
 
-    PartitionedMesh mesh{std::move(nodes), std::move(simplexes), numL1andL2, 0, Partitioner{}};
+    PartitionedMesh mesh{std::move(nodes), std::move(simplices), numL1andL2, 0, Partitioner{}};
 
     auto EntityToL2P = [&mesh](size_t L2, auto Dimension) {
         for (auto entity : mesh.template L2PToEntity<Dimension.value>(L2))
@@ -113,13 +112,13 @@ TEST(PartitionedMesh, TwoL1_OneL2)
 TEST(PartitionedMesh, OneL1_TwoL2)
 {
 
-    Grid grid{9, 9};
+    Grid<2> grid{9, 9};
     auto numL1andL2 = std::pair{1, 2};
 
     auto nodes = grid.nodes;
-    auto simplexes = grid.simplexes;
+    auto simplices = grid.simplices;
 
-    PartitionedMesh mesh{std::move(nodes), std::move(simplexes), numL1andL2, 0, Partitioner{}};
+    PartitionedMesh mesh{std::move(nodes), std::move(simplices), numL1andL2, 0, Partitioner{}};
 
     // Check correct partition size calculation
     ASSERT_EQ(mesh.GetNumL1Partitions(), 1);
@@ -161,13 +160,13 @@ TEST(PartitionedMesh, OneL1_TwoL2)
 TEST(PartitionedMesh, TwoL1_TwoL2)
 {
 
-    Grid grid{9, 9};
+    Grid<2> grid{9, 9};
     auto numL1andL2 = std::pair{2, 2};
 
     auto nodes = grid.nodes;
-    auto simplexes = grid.simplexes;
+    auto simplices = grid.simplices;
 
-    PartitionedMesh mesh{std::move(nodes), std::move(simplexes), numL1andL2, 0, Partitioner{}};
+    PartitionedMesh mesh{std::move(nodes), std::move(simplices), numL1andL2, 0, Partitioner{}};
 
     // Check correct partition size calculation
     ASSERT_EQ(mesh.GetNumL1Partitions(), 2);
