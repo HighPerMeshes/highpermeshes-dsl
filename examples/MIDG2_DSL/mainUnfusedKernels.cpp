@@ -57,7 +57,7 @@ int main(int, char**)
     
     auto AllCells { mesh.GetEntityRange<Mesh::CellDimension>() } ;
 
-    constexpr auto Dofs = ::HPM::dof::MakeDofs<0, 0, 0, DG::numVolNodes>();
+    constexpr auto Dofs = ::HPM::dof::MakeDofs<0, 0, 0, DG::numVolNodes, 0>();
 
     /** \brief load initial conditions for fields */
     auto fieldH { hpm.GetBuffer<CoordinateType>(mesh, Dofs) }; 
