@@ -28,7 +28,7 @@ class AccessDefinitionHelpers : public ::testing::Test
 
     const decltype(cube.mesh)& mesh{cube.mesh};
 
-    Buffer<int, std::decay_t<decltype(cube.mesh)>, dataType::ConstexprArray<std::size_t, 1, 1, 1, 1>, std::allocator<int>> field{mesh, {}, {}};
+    Buffer<int, std::decay_t<decltype(cube.mesh)>, dataType::ConstexprArray<std::size_t, 1, 1, 1, 1, 0>, std::allocator<int>> field{mesh, {}, {}};
 
     SequentialDispatcher dispatcher;
 
@@ -65,7 +65,6 @@ constexpr size_t NodeDim = 0;
 
 TEST_F(AccessDefinitionHelpers, Cell)
 {
-
     dispatcher.Execute(ForEachEntity(mesh.GetEntityRange<CellDim>(), std::tuple(ReadWrite(Cell(field))), [](const auto& entity, const auto& time_step, auto& lvs) {
         auto& cell = dof::GetDofs<CellDim>(std::get<0>(lvs));
         cell[0] += 1;
