@@ -12,6 +12,7 @@ add_executable ( tests
     dsl/tmp/util/IsExpressionSupportedTest.cpp
     dsl/tmp/util/IsTemplateSpecialization.hpp
     dsl/tmp/util/TupleTypeTraitsTest.cpp
+    dsl/dispatchers/TimeStep.cpp
 )
               
 target_include_directories (tests PRIVATE 
