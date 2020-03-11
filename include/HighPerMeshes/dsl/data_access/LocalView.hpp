@@ -98,7 +98,7 @@ namespace HPM::internal
                 if constexpr (AccessDefinition::BufferT::DofT::IsConstexprArray)
                 {
                     // Global dofs are located always at the beginning of the buffer.
-                    return LocalBuffer(access.buffer, 0);
+                    return std::array<LocalBuffer, 1>{LocalBuffer(access.buffer, 0)};
                 }
                 else
                 {
@@ -106,7 +106,7 @@ namespace HPM::internal
                     assert(num_dofs > 0);
 
                     // Global dofs are located always at the beginning of the buffer.
-                    return LocalBuffer(access.buffer, 0, num_dofs);
+                    return std::array<LocalBuffer, 1>{LocalBuffer(access.buffer, 0, num_dofs)};
                 }
             }
             else

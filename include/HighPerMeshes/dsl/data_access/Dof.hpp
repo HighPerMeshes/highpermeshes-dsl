@@ -190,7 +190,7 @@ namespace HPM::dof
         static_assert(!std::is_same_v<InvalidLocalBuffer, typename std::tuple_element_t<Dimension, LocalViewElement>>, "error: you are trying to access an invalid local buffer");
 
         // If the cell dimension is requested, return a reference to the `LocalBuffer`.
-        if constexpr (Dimension == CellDimension)
+        if constexpr (Dimension >= CellDimension)
         {
             return std::get<Dimension>(local_view)[0];
         }
