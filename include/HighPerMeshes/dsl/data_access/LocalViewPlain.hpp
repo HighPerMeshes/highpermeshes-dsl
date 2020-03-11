@@ -48,7 +48,7 @@ namespace HPM::internal
         //! `InvalidLocalBuffers` are sorted out effectively.
         //!
         //! \tparam TupleT the type of the innermost tuple
-        //! \tparam Dimension a variadic list of dimensions to be consdered: 0..CellDimension
+        //! \tparam Dimension a variadic list of dimensions to be consdered: 0..CellDimension+1
         //! \param unnamed used for template parameter deduction
         //! \return a `ConstexprArray` holding the number of `LocalBuffers` in each `Dimension` (as non-type template parameters)
         //!
@@ -74,16 +74,16 @@ namespace HPM::internal
         //!     - num_entries : the number of fields for which offsets are stored
         //!     - size : the size of the `data` member (in units of `unsigned long long` words)
         //!     - byte_size : the total size of the plain type in bytes
-        //!     - data : a sequence of `ùnsigned long long` words encoding the orignal `LocalView` type
+        //!     - data : a sequence of `unsigned long long` words encoding the orignal `LocalView` type
         //!
         //! Encoding:
         //!     - each entry `<i>` is assigned a contigous block (partition) starting at position `P<i>` inside `data`
         //!     - partitions are divided into a block of meta information and contiguos blocks (starting at position `E<i,d>` inside `data`) containing offsets
-        //!       for entities of dimension `d=0..cell_dimension`.
+        //!       for entities of dimension `d=0..cell_dimension+1`.
         //!     - `data[0]..data[(num_entries-1)]` : start positions `P<i>` inside `data` (entry partitions).
         //!        -> length: `num_entries`
-        //!     - `data[P<i>]..data[(P<i>+cell_dimension)]` : start positions `E<i,d>` inside `data` (entity partitions for dimension `d`).
-        //!        -> length: `cell_dimension+1`
+        //!     - `data[P<i>]..data[(P<i>+cell_dimension+1)]` : start positions `E<i,d>` inside `data` (entity partitions for dimension `d`).
+        //!        -> length: `cell_dimension+2`
         //!     - `data[E<i,d>]` : the number `NO<i,d>` of entities with dimension `d` for which offset values are stored.
         //!     - `data[E<i,d>+1]..data[E<i,d>..NO<i,d>]` : a sequence of offset values for entities with dimension `d`.
         //!
@@ -96,9 +96,9 @@ namespace HPM::internal
         {
             // In addition to `NumLocalBuffers`, we need to store for each entry
             //    - `P<i>`
-            //    - `E<i,0>..E<i,CellDimension>`
-            //    - `NO<i,0>..NO<i,CellDimension>`
-            static constexpr std::size_t DataSize = NumEntries * (1 + 2 * (CellDimension + 1)) + NumLocalBuffers;
+            //    - `E<i,0>..E<i,CellDimension+1>`
+            //    - `NO<i,0>..NO<i,CellDimension+1>`
+            static constexpr std::size_t DataSize = NumEntries * (1 + 2 * (CellDimension + 2)) + NumLocalBuffers;
 
             friend class ::HPM::internal::LocalViewPlain;
 
@@ -128,14 +128,14 @@ namespace HPM::internal
                 }
 
                 // Set up a base pointer to this entry's partition.
-                assert(ListIndex < DataSize && (data[ListIndex] + CellDimension + 1) <= DataSize);
+                assert(ListIndex < DataSize && (data[ListIndex] + CellDimension + 2) <= DataSize);
                 unsigned long long* entry = &data[data[ListIndex]];
-                // Inside the partition, note the position `E<i,0>` of the first block (entity partition) assigned to entities with dimension 0: there are `CellDimension+1` blocks.
-                entry[0] = CellDimension + 1;
+                // Inside the partition, note the position `E<i,0>` of the first block (entity partition) assigned to entities with dimension 0: there are `CellDimension+2` blocks.
+                entry[0] = CellDimension + 2;
                 // We use this variable to accumulate on it for the start position of the next block.
-                std::size_t entry_size = CellDimension + 1;
+                std::size_t entry_size = CellDimension + 2;
 
-                ConstexprFor<0, CellDimension + 1>([&, entity = access.pattern(entity)](const auto D) {
+                ConstexprFor<0, CellDimension + 2>([&, entity = access.pattern(entity)](const auto D) {
                     // Deduce the dof mask from the access pattern.
                     constexpr std::size_t DofMask[] = {(decltype(access.Dofs)::template At<Dimension>() && (Dimension <= EntityT::Dimension) ? 1 : 0)...};
                     // Set up a base pointer to this entity's block.
@@ -197,7 +197,7 @@ namespace HPM::internal
                     }
 
                     // For all iterations except the last one, calculate the start position of the next block (for the entity with one dimension higher).
-                    if constexpr ((D + 1) <= CellDimension)
+                    if constexpr ((D + 1) <= (CellDimension + 1))
                     {
                         entry[D + 1] = entry[D] + 1 + num_offsets;
                     }
@@ -214,7 +214,7 @@ namespace HPM::internal
 
                 // Translate the local start positions `E<i,d>` inside this partition to global indices by shifting their values by
                 // the start position of this partition.
-                ConstexprFor<0, CellDimension + 1>([this, &entry](const auto D) { entry[D] += data[ListIndex]; });
+                ConstexprFor<0, CellDimension + 2>([this, &entry](const auto D) { entry[D] += data[ListIndex]; });
             }
 
             //!
@@ -238,7 +238,7 @@ namespace HPM::internal
             PlainOffset(const std::tuple<AccessListElement...>& access_list, const MeshT& mesh, const EntityT& entity, std::index_sequence<ListIndex...>)
                 : cell_dimension(CellDimension), num_entries(NumEntries), size(DataSize), byte_size(2 * sizeof(unsigned) + (2 + DataSize) * sizeof(unsigned long long))
             {
-                (GetOffsetValues<ListIndex>(std::get<ListIndex>(access_list), mesh, entity, std::make_index_sequence<MeshT::CellDimension + 1>{}), ...);
+                (GetOffsetValues<ListIndex>(std::get<ListIndex>(access_list), mesh, entity, std::make_index_sequence<MeshT::CellDimension + 2>{}), ...);
             }
 
             public:

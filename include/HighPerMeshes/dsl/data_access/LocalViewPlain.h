@@ -35,7 +35,8 @@ typedef enum
     NodeEntity = 0,
     EdgeEntity,
     FaceEntity,
-    CellEntity
+    CellEntity,
+    Global
 } EntityName;
 
 [[maybe_unused]] static unsigned GetCellDimension(const PlainOffset* const plain_offset)
@@ -81,7 +82,7 @@ typedef enum
 
     assert((position + 1) < (plain_offset->size));
 
-    return plain_offset->data + position + 1;
+    return &(plain_offset->data[position + 1]);
 }
 
 #endif
