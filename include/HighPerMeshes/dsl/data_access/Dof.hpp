@@ -66,12 +66,12 @@ namespace HPM::dof
     {
         if (order == 3)
         {
-            return ConstArray<std::size_t, 4>(0, 0, 0, 20);
+            return ConstArray<std::size_t, 5>(0, 0, 0, 20, 0);
         }
 
         // throw std::runtime_error("error: not implemented");
 
-        return ConstArray<std::size_t, 4>(0, 0, 0, 0);
+        return ConstArray<std::size_t, 5>(0, 0, 0, 0, 0);
     }
 
     //!
@@ -82,32 +82,32 @@ namespace HPM::dof
     {
         if (order == 1)
         {
-            return ConstArray<std::size_t, 4>(1, 0, 0, 0);
+            return ConstArray<std::size_t, 5>(1, 0, 0, 0, 0);
         }
         else if (order == 2)
         {
-            return ConstArray<std::size_t, 4>(1, 1, 0, 0);
+            return ConstArray<std::size_t, 5>(1, 1, 0, 0, 0);
         }
         else if (order == 3)
         {
-            return ConstArray<std::size_t, 4>(1, 2, 1, 0);
+            return ConstArray<std::size_t, 5>(1, 2, 1, 0, 0);
         }
         else if (order == 4)
         {
-            return ConstArray<std::size_t, 4>(1, 3, 3, 1);
+            return ConstArray<std::size_t, 5>(1, 3, 3, 1, 0);
         }
         else if (order == 5)
         {
-            return ConstArray<std::size_t, 4>(1, 4, 6, 4);
+            return ConstArray<std::size_t, 5>(1, 4, 6, 4, 0);
         }
         else if (order == 6)
         {
-            return ConstArray<std::size_t, 4>(1, 5, 10, 10);
+            return ConstArray<std::size_t, 5>(1, 5, 10, 10, 0);
         }
 
         // throw std::runtime_error("error: not implemented");
 
-        return ConstArray<std::size_t, 4>(0, 0, 0, 0);
+        return ConstArray<std::size_t, 5>(0, 0, 0, 0, 0);
     }
 
     //!
@@ -123,7 +123,8 @@ namespace HPM::dof
             Node = 0,
             Edge = 1,
             Face = 10000,
-            Cell = 10001
+            Cell = 10001,
+            Global = 10002
         };
     };
 
@@ -143,7 +144,22 @@ namespace HPM::dof
         {
             static_assert(CellDimension > 0, "error: this is a node set. Is this a valid mesh?");
 
-            return ConstexprIfElse<PseudoDimension == Name::Cell>(CellDimension, ConstexprIfElse<PseudoDimension == Name::Face>(CellDimension - 1, PseudoDimension));
+            if (PseudoDimension == Name::Global)
+            {
+                return CellDimension + 1;
+            }
+            else if (PseudoDimension == Name::Cell)
+            {
+                return CellDimension;
+            }
+            else if (PseudoDimension == Name::Face)
+            {
+                return CellDimension - 1;
+            }
+            else
+            {
+                return PseudoDimension;
+            }
         }
     } // namespace
 
@@ -170,7 +186,7 @@ namespace HPM::dof
         constexpr std::size_t Dimension = ResolveDimension<PseudoDimension, CellDimension>();
 
         // Check if the `Dimension` is valid and if the requested dimension is for an `InvalidLocalBuffer`.
-        static_assert(Dimension <= CellDimension, "error: Dimension is larger than the mesh-element dimension");
+        static_assert(Dimension <= (CellDimension + 1), "error: Dimension is larger than the mesh-element dimension plus 1 (global dofs)");
         static_assert(!std::is_same_v<InvalidLocalBuffer, typename std::tuple_element_t<Dimension, LocalViewElement>>, "error: you are trying to access an invalid local buffer");
 
         // If the cell dimension is requested, return a reference to the `LocalBuffer`.
@@ -203,40 +219,49 @@ namespace HPM::dof
         constexpr std::size_t Dimension = ResolveDimension<PseudoDimension, CellDimension>();
 
         // Check if the `Dimension` is valid.
-        static_assert(Dimension <= CellDimension, "error: Dimension is larger than the mesh-element dimension");
+        static_assert(Dimension <= (CellDimension + 1), "error: Dimension is larger than the mesh-element dimension plus 1 (global dofs)");
         static_assert(DofT::Size() >= CellDimension, "error: potential out of bounds data access");
 
-        // calculate the shift value inside the partition of dofs of the requested `Dimension`.
-        const std::size_t shift = index * dofs.template At<Dimension>();
-
-        // If the requested `Dimension` is the cell dimension, return immediately.
-        if constexpr (Dimension == CellDimension)
+        // Global dofs
+        if constexpr (Dimension == (CellDimension  + 1))
         {
-            return shift;
-        }
-        // Otherwise, add the size of the dof partitions with dimension `(Dimension+1)..CellDimension`
-        else if constexpr (Dimension == (CellDimension - 1))
-        {
-            return shift + dofs.template At<CellDimension>() * mesh.template GetNumEntities<CellDimension>();
+            return index;
         }
         else
         {
-            // These bounds are in terms of codimension.
-            constexpr std::size_t Begin = 0;
-            constexpr std::size_t End = CellDimension - Dimension;
+            // Calculate the shift value inside the partition of dofs of the requested `Dimension`.
+            const std::size_t num_global_dofs = dofs.template At<CellDimension + 1>();
+            const std::size_t shift = num_global_dofs + index * dofs.template At<Dimension>();
 
-            static_assert(Begin <= End);
-            static_assert(End < DofT::Size(), "error: out of bounds");
+            // If the requested `Dimension` is the cell dimension, return immediately.
+            if constexpr (Dimension == CellDimension)
+            {
+                return shift;
+            }
+            // Otherwise, add the size of the dof partitions with dimension `(Dimension+1)..CellDimension`
+            else if constexpr (Dimension == (CellDimension - 1))
+            {
+                return shift + dofs.template At<CellDimension>() * mesh.template GetNumEntities<CellDimension>();
+            }
+            else
+            {
+                // These bounds are in terms of codimension.
+                constexpr std::size_t Begin = 0;
+                constexpr std::size_t End = CellDimension - Dimension;
 
-            // Prefix sum calculation: result is in 'offset'.
-            std::size_t offset = shift;
+                static_assert(Begin <= End);
+                static_assert(End < DofT::Size(), "error: out of bounds");
 
-            ConstexprFor<Begin, End>([&mesh, &offset, &dofs](const auto I) {
-                constexpr std::size_t Index = (CellDimension - I);
-                offset += dofs.template At<Index>() * mesh.template GetNumEntities<Index>();
-            });
+                // Prefix sum calculation: result is in 'offset'.
+                std::size_t offset = shift;
 
-            return offset;
+                ConstexprFor<Begin, End>([&mesh, &offset, &dofs](const auto I) {
+                    constexpr std::size_t Index = (CellDimension - I);
+                    offset += dofs.template At<Index>() * mesh.template GetNumEntities<Index>();
+                });
+
+                return offset;
+            }
         }
     }
 
