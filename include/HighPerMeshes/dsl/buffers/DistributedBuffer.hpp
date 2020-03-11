@@ -47,27 +47,40 @@ namespace HPM
         DistributedBuffer(const std::size_t L1_index, MeshT const& mesh, const DofT dofs = DofT{}, Allocator const allocator = Allocator{}) : Base(mesh, dofs.Get()), data(allocator)
         {
             //! For each entity in the local range go through all DoF-Dimensions and the corresponding indices and assign them a position in the local buffer space.
-            const std::size_t num_global_dofs = dofs.template At<MeshT::CellDimension + 1>();
-            std::size_t local_index = dofs.template At<MeshT::CellDimension + 1>(); // global dofs first
+            std::size_t local_index = 0;
 
-            ::HPM::auxiliary::ConstexprFor<0, MeshT::CellDimension + 1>([this, &mesh, &dofs, L1_index, &local_index](const auto Dimension) mutable {
+            ::HPM::auxiliary::ConstexprFor<0, MeshT::CellDimension + 2>([this, &mesh, &dofs, L1_index, &local_index](const auto Codimension) mutable 
+            {
+                constexpr std::size_t Dimension = (MeshT::CellDimension + 1) - Codimension;
                 const std::size_t num_dofs = dofs.template At<Dimension>();
 
-                for (auto L2 : mesh.L1PToL2P(L1_index))
+                if constexpr (Dimension == (MeshT::CellDimension + 1))
                 {
-                    for (const auto& entity : mesh.template L2PToEntity<Dimension>(L2))
-                    {
-                        const std::size_t offset = Base::offsets[Dimension] + num_dofs * entity.GetTopology().GetIndex();
+                    const std::size_t offset = 0;
 
-                        for (std::size_t dof = 0; dof < num_dofs; ++dof)
+                    for (std::size_t dof = 0; dof < num_dofs; ++dof)
+                    {
+                        global_to_local_index.emplace(offset + dof, local_index++);
+                    }
+                }
+                else
+                {
+                    for (auto L2 : mesh.L1PToL2P(L1_index))
+                    {
+                        for (const auto& entity : mesh.template L2PToEntity<Dimension>(L2))
                         {
-                            global_to_local_index.emplace(offset + dof, local_index++);
+                            const std::size_t offset = Base::offsets[Dimension] + num_dofs * entity.GetTopology().GetIndex();
+
+                            for (std::size_t dof = 0; dof < num_dofs; ++dof)
+                            {
+                                global_to_local_index.emplace(offset + dof, local_index++);
+                            }
                         }
                     }
                 }
             });
 
-            data.resize(num_global_dofs + global_to_local_index.size());
+            data.resize(global_to_local_index.size());
         }
 
         //! \return Given an index, return the corresponding buffer entry
