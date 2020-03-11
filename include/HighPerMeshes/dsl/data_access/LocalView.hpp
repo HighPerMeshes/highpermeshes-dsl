@@ -86,6 +86,36 @@ namespace HPM::internal
         }
 
         //!
+        //! \brief Version of the `GetLocalBuffer` function for global dofs: no entity needed.
+        //!
+        template <std::size_t NumDofs, typename AccessDefinition>
+        static auto GetLocalBuffer(const AccessDefinition& access, [[maybe_unused]] const std::size_t num_dofs)
+        {
+            using LocalBuffer = typename AccessDefinition::template LocalBuffer<NumDofs>;
+
+            if constexpr (NumDofs > 0)
+            {
+                if constexpr (AccessDefinition::BufferT::DofT::IsConstexprArray)
+                {
+                    // Global dofs are located always at the beginning of the buffer.
+                    return LocalBuffer(access.buffer, 0);
+                }
+                else
+                {
+                    // NumDofs is either 0 or 1: use the num_dofs argument to provide the actual dof-value to the `LocalBuffer`.
+                    assert(num_dofs > 0);
+
+                    // Global dofs are located always at the beginning of the buffer.
+                    return LocalBuffer(access.buffer, 0, num_dofs);
+                }
+            }
+            else
+            {
+                return InvalidLocalBuffer{};
+            }
+        }
+
+        //!
         //! \brief Implementation of the local view creation (processing of each element of the access list indivually).
         //!
         //! For each element of the access list (a tuple type) and dimenions up to the cell dimension, create arrays with as many local buffers as there are (sub-)entities in that dimension.
@@ -108,6 +138,7 @@ namespace HPM::internal
 
             // Deduce the dof mask from the access pattern.
             constexpr std::size_t DofMask[] = {(decltype(access.Dofs)::template At<Dimension>() && (Dimension <= ConsideredElementT::Dimension) ? 1 : 0)...};
+            constexpr std::size_t GlobalDofMask = (decltype(access.Dofs)::template At<CellDimension + 1>() ? 1 : 0);
 
             // Use compile time Dofs?
             if constexpr (AccessDefinition::UseCompileTimeDofs)
@@ -115,9 +146,11 @@ namespace HPM::internal
                 // Extract the actual number of dofs from the `DofT` and the dof mask.
                 using DofT = typename AccessDefinition::BufferT::DofT;
                 constexpr std::size_t NumDofs[] = {DofT::template At<Dimension>() * DofMask[Dimension]...};
+                constexpr std::size_t NumGlobalDofs = DofT::template At<CellDimension + 1>() * GlobalDofMask;
 
                 // Get all `LocalBuffer`s or `InvalidLocalBuffer`s for this entity.
                 return std::tuple{GetLocalBuffer<Dimension, NumDofs[Dimension]>(access, entity, GetOffset<Dimension, DofT>(entity.GetMesh()), NumDofs[Dimension])...,
+                                    GetLocalBuffer<NumGlobalDofs>(access, NumGlobalDofs),
                                     std::integral_constant<std::size_t, CellDimension>{}};
             }
             else
@@ -125,10 +158,12 @@ namespace HPM::internal
                 // Get the dofs from the access list element.
                 const auto& dofs = access.buffer->GetDofs();
                 const std::size_t num_dofs[] = {dofs.template At<Dimension>() * DofMask[Dimension]...};
+                const std::size_t num_global_dofs = dofs.template At<CellDimension + 1>() * GlobalDofMask;
 
                 // Get all `LocalBuffer`s or `InvalidLocalBuffer`s for this entity.
                 // If DofMask[] > 0 holds, num_dofs[] is used to access the actual dof-values.
                 return std::tuple{GetLocalBuffer<Dimension, DofMask[Dimension]>(access, entity, GetOffset<Dimension>(entity.GetMesh(), dofs), num_dofs[Dimension])...,
+                                    GetLocalBuffer<GlobalDofMask>(access, num_global_dofs),
                                     std::integral_constant<std::size_t, CellDimension>{}};
             }
         }
