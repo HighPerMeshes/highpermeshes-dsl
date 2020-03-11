@@ -18,26 +18,27 @@ TEST(SequentialDispatcherTest, TimeSteps)
   auto AllCells{mesh.GetEntityRange<CellDimension>()};
 
   auto set_data = [](auto &buffer) {
-    for (size_t i = 0; i < buffer.GetSize(); ++i)
+    const std::size_t buffer_size = buffer.GetSize();
+    for (std::size_t i = 0; i < buffer_size; ++i)
     {
       buffer[i] = -1;
     }
   };
 
-  auto execute_kernel = [&](auto &buffer, auto steps) {
+  auto execute_kernel = [&](auto &buffer, const std::size_t steps) {
     dispatcher.Execute(
         iterator::Range{steps},
         ForEachEntity(
             AllCells,
             std::tuple(Write(Cell(buffer))),
-            [&](const auto &cell, auto step, auto local_view) {
+            [&](const auto &, auto step, auto local_view) {
               auto &bufferAccess = dof::GetDofs<CellDimension>(std::get<0>(local_view));
               bufferAccess[step] = step;
             }));
   };
 
-  auto check_results = [](auto &buffer, auto steps) {
-    for (size_t i = 0; i < steps; ++i)
+  auto check_results = [](auto &buffer, const std::size_t steps) {
+    for (std::size_t i = 0; i < steps; ++i)
     {
       EXPECT_EQ(buffer[i], i);
     }
@@ -73,14 +74,14 @@ TEST(SequentialDispatcherTest, TimeSteps)
         ForEachEntity(
             AllCells,
             std::tuple(Write(Cell(buffer))),
-            [&](const auto &cell, auto step, auto local_view) {
+            [&](const auto &, auto step, auto local_view) {
               auto &bufferAccess = dof::GetDofs<CellDimension>(std::get<0>(local_view));
               bufferAccess[step] = -1;
             }),
         ForEachEntity(
             AllCells,
             std::tuple(Write(Cell(buffer))),
-            [&](const auto &cell, auto step, auto local_view) {
+            [&](const auto &, auto step, auto local_view) {
               auto &bufferAccess = dof::GetDofs<CellDimension>(std::get<0>(local_view));
               bufferAccess[step] = step;
             }));

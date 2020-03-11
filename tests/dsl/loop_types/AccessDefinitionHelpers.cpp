@@ -65,7 +65,7 @@ constexpr size_t NodeDim = 0;
 
 TEST_F(AccessDefinitionHelpers, Cell)
 {
-    dispatcher.Execute(ForEachEntity(mesh.GetEntityRange<CellDim>(), std::tuple(ReadWrite(Cell(field))), [](const auto& entity, const auto& time_step, auto& lvs) {
+    dispatcher.Execute(ForEachEntity(mesh.GetEntityRange<CellDim>(), std::tuple(ReadWrite(Cell(field))), [](const auto&, const auto&, auto& lvs) {
         auto& cell = dof::GetDofs<CellDim>(std::get<0>(lvs));
         cell[0] += 1;
     }));
@@ -77,7 +77,7 @@ TEST_F(AccessDefinitionHelpers, Cell)
 TEST_F(AccessDefinitionHelpers, Face)
 {
 
-    dispatcher.Execute(ForEachEntity(mesh.GetEntityRange<FaceDim>(), std::tuple(ReadWrite(Face(field))), [](const auto& entity, const auto& time_step, auto& lvs) {
+    dispatcher.Execute(ForEachEntity(mesh.GetEntityRange<FaceDim>(), std::tuple(ReadWrite(Face(field))), [](const auto&, const auto&, auto& lvs) {
         auto& face = dof::GetDofs<FaceDim>(std::get<0>(lvs));
         face[0][0] += 1;
     }));
@@ -91,7 +91,7 @@ TEST_F(AccessDefinitionHelpers, Face)
 TEST_F(AccessDefinitionHelpers, Edge)
 {
 
-    dispatcher.Execute(ForEachEntity(mesh.GetEntityRange<EdgeDim>(), std::tuple(ReadWrite(Edge(field))), [](const auto& entity, const auto& time_step, auto& lvs) {
+    dispatcher.Execute(ForEachEntity(mesh.GetEntityRange<EdgeDim>(), std::tuple(ReadWrite(Edge(field))), [](const auto&, const auto&, auto& lvs) {
         auto& edge = dof::GetDofs<EdgeDim>(std::get<0>(lvs));
         edge[0][0] += 1;
     }));
@@ -105,7 +105,7 @@ TEST_F(AccessDefinitionHelpers, Edge)
 TEST_F(AccessDefinitionHelpers, Node)
 {
 
-    dispatcher.Execute(ForEachEntity(mesh.GetEntityRange<NodeDim>(), std::tuple(ReadWrite(Node(field))), [](const auto& entity, const auto& time_step, auto& lvs) {
+    dispatcher.Execute(ForEachEntity(mesh.GetEntityRange<NodeDim>(), std::tuple(ReadWrite(Node(field))), [](const auto&, const auto&, auto& lvs) {
         auto& node = dof::GetDofs<NodeDim>(std::get<0>(lvs));
         node[0][0] += 1;
     }));
@@ -119,7 +119,7 @@ TEST_F(AccessDefinitionHelpers, AllFromCell)
 {
 
     dispatcher.Execute(ForEachEntity(mesh.GetEntityRange<CellDim>(), std::tuple(ReadWrite(All(field))),
-                                     [](const auto& entity, const auto& time_step, auto& lvs) {
+                                     [](const auto&, const auto&, auto& lvs) {
                                          auto& cell = dof::GetDofs<CellDim>(std::get<0>(lvs));
                                          cell[0] += 1;
 
@@ -133,7 +133,7 @@ TEST_F(AccessDefinitionHelpers, AllFromCell)
                                          ForEach(4, [&](auto i) { node[i][0] += 1; });
                                      }),
                        ForEachEntity(mesh.GetEntityRange<FaceDim>(), std::tuple{Read(Face(field))},
-                                     [](const auto& entity, const auto& time_step, auto& lvs) {
+                                     [](const auto& entity, const auto&, auto& lvs) {
                                          auto containingCells = entity.GetTopology().GetIndicesOfAllContainingCells();
 
                                          auto& face = dof::GetDofs<FaceDim>(std::get<0>(lvs));
@@ -149,7 +149,7 @@ TEST_F(AccessDefinitionHelpers, AllFromCell)
                                          }
                                      }),
                        ForEachEntity(mesh.GetEntityRange<EdgeDim>(), std::tuple{Read(Edge(field))},
-                                     [](const auto& entity, const auto& time_step, auto& lvs) {
+                                     [](const auto& entity, const auto&, auto& lvs) {
                                          auto containingCells = entity.GetTopology().GetIndicesOfAllContainingCells();
 
                                          auto& edge = dof::GetDofs<EdgeDim>(std::get<0>(lvs));
@@ -164,7 +164,7 @@ TEST_F(AccessDefinitionHelpers, AllFromCell)
                                              EXPECT_EQ(edge[0][0], 3);
                                          }
                                      }),
-                       ForEachEntity(mesh.GetEntityRange<NodeDim>(), std::tuple{Read(Node(field))}, [](const auto& entity, const auto& time_step, auto& lvs) {
+                       ForEachEntity(mesh.GetEntityRange<NodeDim>(), std::tuple{Read(Node(field))}, [](const auto& entity, const auto&, auto& lvs) {
                            auto containingCells = entity.GetTopology().GetIndicesOfAllContainingCells();
 
                            auto& node = dof::GetDofs<NodeDim>(std::get<0>(lvs));
@@ -185,12 +185,12 @@ TEST_F(AccessDefinitionHelpers, NeighboringMeshElementOrSelf)
 {
 
     dispatcher.Execute(ForEachIncidence<FaceDim>(mesh.GetEntityRange<CellDim>(), std::tuple(ReadWrite(NeighboringMeshElementOrSelf(field))),
-                                                 [](const auto& parent, const auto& child, const auto& time_step, auto& lvs) {
+                                                 [](const auto&, const auto&, const auto&, auto& lvs) {
                                                      auto& cell = dof::GetDofs<CellDim>(std::get<0>(lvs));
 
                                                      cell[0] += 1;
                                                  }),
-                       ForEachEntity(mesh.GetEntityRange<CellDim>(), std::tuple(ReadWrite(Cell(field))), [](const auto& entity, const auto& time_step, auto& lvs) {
+                       ForEachEntity(mesh.GetEntityRange<CellDim>(), std::tuple(ReadWrite(Cell(field))), [](const auto&, const auto&, auto& lvs) {
                            auto& cell = dof::GetDofs<CellDim>(std::get<0>(lvs));
 
                            // Must be 4.
@@ -205,12 +205,12 @@ TEST_F(AccessDefinitionHelpers, ContainingMeshElement)
 {
 
     dispatcher.Execute(ForEachIncidence<FaceDim>(mesh.GetEntityRange<CellDim>(), std::tuple(ReadWrite(ContainingMeshElement(field))),
-                                                 [](const auto& parent, const auto& child, const auto& time_step, auto& lvs) {
+                                                 [](const auto&, const auto&, const auto&, auto& lvs) {
                                                      auto& cell = dof::GetDofs<CellDim>(std::get<0>(lvs));
 
                                                      cell[0] += 1;
                                                  }),
-                       ForEachEntity(mesh.GetEntityRange<CellDim>(), std::tuple(ReadWrite(Cell(field))), [](const auto& entity, const auto& time_step, auto& lvs) {
+                       ForEachEntity(mesh.GetEntityRange<CellDim>(), std::tuple(ReadWrite(Cell(field))), [](const auto&, const auto&, auto& lvs) {
                            auto& cell = dof::GetDofs<CellDim>(std::get<0>(lvs));
 
                            // Must be 4.
