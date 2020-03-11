@@ -24,46 +24,52 @@ namespace HPM
     //!
     //! \{
     template <typename BufferT>
+    auto Global(BufferT& buffer)
+    {
+        using MeshT = typename BufferT::MeshT;
+        return AccessDefinition{&buffer, AccessPatterns::SimplePattern, dof_requests::RequestEquals<MeshT::CellDimension + 2, MeshT::CellDimension + 1>, ReadWriteConstant};
+    }
+    template <typename BufferT>
     auto Cell(BufferT& buffer)
     {
         using MeshT = typename BufferT::MeshT;
-        return AccessDefinition{&buffer, AccessPatterns::SimplePattern, dof_requests::RequestEquals<MeshT::CellDimension + 1, MeshT::CellDimension>, ReadWriteConstant};
+        return AccessDefinition{&buffer, AccessPatterns::SimplePattern, dof_requests::RequestEquals<MeshT::CellDimension + 2, MeshT::CellDimension>, ReadWriteConstant};
     }
     template <typename BufferT>
     auto NeighboringMeshElementOrSelf(BufferT& buffer)
     {
         using MeshT = typename BufferT::MeshT;
-        return AccessDefinition{&buffer, AccessPatterns::NeighboringMeshElementOrSelfPattern, dof_requests::RequestEquals<MeshT::CellDimension + 1, MeshT::CellDimension>, ReadWriteConstant};
+        return AccessDefinition{&buffer, AccessPatterns::NeighboringMeshElementOrSelfPattern, dof_requests::RequestEquals<MeshT::CellDimension + 2, MeshT::CellDimension>, ReadWriteConstant};
     }
     template <typename BufferT>
     auto ContainingMeshElement(BufferT& buffer)
     {
         using MeshT = typename BufferT::MeshT;
-        return AccessDefinition{&buffer, AccessPatterns::ContainingMeshElementPattern, dof_requests::RequestEquals<MeshT::CellDimension + 1, MeshT::CellDimension>, ReadWriteConstant};
+        return AccessDefinition{&buffer, AccessPatterns::ContainingMeshElementPattern, dof_requests::RequestEquals<MeshT::CellDimension + 2, MeshT::CellDimension>, ReadWriteConstant};
     }
     template <typename BufferT>
     auto All(BufferT& buffer)
     {
         using MeshT = typename BufferT::MeshT;
-        return AccessDefinition{&buffer, AccessPatterns::SimplePattern, dof_requests::RequestAll<MeshT::CellDimension + 1>, ReadWriteConstant};
+        return AccessDefinition{&buffer, AccessPatterns::SimplePattern, dof_requests::RequestAll<MeshT::CellDimension + 2>, ReadWriteConstant};
     }
     template <typename BufferT>
     auto Node(BufferT& buffer)
     {
         using MeshT = typename BufferT::MeshT;
-        return AccessDefinition{&buffer, AccessPatterns::SimplePattern, dof_requests::RequestEquals<MeshT::CellDimension + 1, 0>, ReadWriteConstant};
+        return AccessDefinition{&buffer, AccessPatterns::SimplePattern, dof_requests::RequestEquals<MeshT::CellDimension + 2, 0>, ReadWriteConstant};
     }
     template <typename BufferT>
     auto Edge(BufferT& buffer)
     {
         using MeshT = typename BufferT::MeshT;
-        return AccessDefinition{&buffer, AccessPatterns::SimplePattern, dof_requests::RequestEquals<MeshT::CellDimension + 1, 1>, ReadWriteConstant};
+        return AccessDefinition{&buffer, AccessPatterns::SimplePattern, dof_requests::RequestEquals<MeshT::CellDimension + 2, 1>, ReadWriteConstant};
     }
     template <typename BufferT>
     auto Face(BufferT& buffer)
     {
         using MeshT = typename BufferT::MeshT;
-        return AccessDefinition{&buffer, AccessPatterns::SimplePattern, dof_requests::RequestEquals<MeshT::CellDimension + 1, MeshT::CellDimension - 1>, ReadWriteConstant};
+        return AccessDefinition{&buffer, AccessPatterns::SimplePattern, dof_requests::RequestEquals<MeshT::CellDimension + 2, MeshT::CellDimension - 1>, ReadWriteConstant};
     }
     //! \}
 

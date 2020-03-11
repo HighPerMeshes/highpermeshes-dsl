@@ -37,7 +37,7 @@ int main()
 
     // Degrees of freedom, which are referred to `dofs` most of the time, allow us to associate entities of the mesh with space in a buffer.
     // In this example, we define just one degree of freedom for each face and each cell in the mesh 
-    constexpr auto dofs= dof::MakeDofs<0, 0, 0, 1>();
+    constexpr auto dofs= dof::MakeDofs<0, 0, 0, 1, 0>();
 
     // Here we allocate a buffer and see the benefits of leaving the buffer generation to the runtime system.
     // Independent of technology used, we can call the runtime's GetBuffer function to allocate data of type int for each entity in the mesh corresponding to the specified degrees of freedom.
@@ -69,7 +69,7 @@ int main()
             // Cell is the current entity, its
             // step specifies the repetition
             // local_view is used to access the local representation of the passed loops. They are ordered in the same way as the tuple specified just before it
-            [&](const auto &cell, auto step, auto local_view) {
+            [&](const auto &, auto, auto local_view) {
 
                 auto& bufferAccess = dof::GetDofs<CellDimension>(std::get<0>(local_view));
 

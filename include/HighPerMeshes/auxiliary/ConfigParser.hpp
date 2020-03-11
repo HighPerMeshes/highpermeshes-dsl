@@ -49,6 +49,7 @@ namespace HPM::auxiliary
         };
 
         template <>
+        [[maybe_unused]]
         auto Conversion::StringToScalar<std::string>(const std::string& s_value) -> std::string
         {
             return s_value;

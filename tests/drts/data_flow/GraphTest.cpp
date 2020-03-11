@@ -32,7 +32,7 @@ class GraphTest : public ::testing::Test
         return graphDependencies.size(); 
     }
 
-    const auto dependencies(size_t vertex) const
+    auto dependencies(size_t vertex) const
     {
         const std::vector<Graph<TestType>::Edge>& graphDependencies = graph.GetEdges();
         std::vector<Graph<TestType>::Edge> filtered;
@@ -40,7 +40,7 @@ class GraphTest : public ::testing::Test
         return filtered;
     }
 
-    const auto firstDependency(size_t vertex) const { return dependencies(vertex)[0]; }
+    auto firstDependency(size_t vertex) const { return dependencies(vertex)[0]; }
 
     auto size() const { return graph.GetVertices().size(); }
 };

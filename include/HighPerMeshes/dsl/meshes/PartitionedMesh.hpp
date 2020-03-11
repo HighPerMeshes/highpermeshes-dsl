@@ -47,7 +47,7 @@ namespace HPM::mesh
         //! \brief Private Constructor
         //!
         template <typename Partitioner = SimplePartitioner>
-        PartitionedMesh(std::vector<CoordinateT>&& nodes, std::vector<std::array<std::size_t, NumNodesPerCell>>&& cell_node_index_list, const std::pair<std::size_t, std::size_t> num_partitions, std::size_t myL1Partition,
+        PartitionedMesh(std::vector<CoordinateT>&& nodes, std::vector<std::array<std::size_t, NumNodesPerCell>>&& cell_node_index_list, const std::pair<std::size_t, std::size_t> num_partitions = {1, 1}, std::size_t myL1Partition = 0,
                         Partitioner partitioner = Partitioner{})
             : PartitionedMesh(partitioner.template CreatePartitions<NumNodesPerFace>(std::move(nodes), std::move(cell_node_index_list), num_partitions), num_partitions, myL1Partition)
         {

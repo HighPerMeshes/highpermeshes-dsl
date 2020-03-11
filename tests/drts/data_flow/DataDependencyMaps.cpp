@@ -86,7 +86,7 @@ class DataDependencyMapsTest : public testing::Test
     auto entityAccess(Map&& map, size_t accessor, size_t accessed, size_t Dimension) const
     {
         return map.L2PHasAccessToL2PByEntity(accessor, accessed)[Cell - Dimension];
-    };
+    }
 
     //! return if collection lhs and rhs are equal
     template <typename Collection>

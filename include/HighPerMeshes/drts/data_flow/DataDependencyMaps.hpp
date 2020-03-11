@@ -68,7 +68,8 @@ namespace HPM::drts::data_flow
                 has_access_by_entity[{L2, other_L2}][RequiredCodimension].insert(other_index);
             };
 
-            for (std::size_t i_L1 = 0; i_L1 < mesh.GetNumL1Partitions(); ++i_L1)
+            const std::size_t num_l1_partitions = mesh.GetNumL1Partitions();
+            for (std::size_t i_L1 = 0; i_L1 < num_l1_partitions; ++i_L1)
             {
                 for (auto L2 : mesh.L1PToL2P(i_L1))
                 {

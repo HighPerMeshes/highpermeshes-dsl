@@ -5,6 +5,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS on)
 list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/cmake)
 
 set (CMAKE_CXX_STANDARD 17)
+set (CMAKE_BUILD_TYPE Release)
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native -ftree-vectorize -ffast-math -Wall -Wextra -pedantic")
 set (BUILD_EXAMPLES on)
 set (BUILD_TESTS on)
 

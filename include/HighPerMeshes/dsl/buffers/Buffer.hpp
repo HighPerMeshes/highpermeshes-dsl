@@ -43,7 +43,7 @@ namespace HPM
         using MeshT = MeshT_;
         using DofT = DofT_;
 
-        static_assert(DofT::Size() == MeshT::CellDimension + 1, "error: DofT has wrong size");
+        static_assert(DofT::Size() == MeshT::CellDimension + 2, "error: DofT has wrong size");
 
         Buffer(const MeshT& mesh, const DofT dofs = DofT{}, const Allocator& allocator = Allocator())
             : BufferBase<MeshT>(mesh, dofs.Get()), data(GetTotalNumDofs(mesh, dofs), allocator), mesh(mesh), dofs(dofs)
@@ -73,6 +73,10 @@ namespace HPM
         auto GetDofs() const -> const DofT& { return dofs; }
 
         std::size_t GetSize() const { return data.size(); }
+
+        auto begin() const { return data.begin(); }
+
+        auto end() const { return data.end(); }
 
       public:
         std::vector<T, Allocator> data;
