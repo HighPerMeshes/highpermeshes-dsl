@@ -126,6 +126,8 @@ struct Grid<2>
         }
     }
 
+    Grid(const std::array<std::size_t, 2>& extent) : Grid(extent[0], extent[1]) {}
+
     std::vector<CoordinateT> nodes;
 
     std::vector<std::array<std::size_t, 3>> simplices;
