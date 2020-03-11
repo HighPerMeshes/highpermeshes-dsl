@@ -175,6 +175,9 @@ namespace HPM::dof
     //! \param local_view a tuple instance
     //! \return a reference to the array of `LocalBuffers` according to the requested dimension: for the `CellDimension`, a reference to the `LocalBuffer` is returned
     //!
+template <typename T>
+class DEBUG;
+
     template <std::size_t PseudoDimension, typename LocalViewElement>
     constexpr auto& GetDofs(LocalViewElement& local_view)
     {
@@ -190,7 +193,9 @@ namespace HPM::dof
         static_assert(!std::is_same_v<InvalidLocalBuffer, typename std::tuple_element_t<Dimension, LocalViewElement>>, "error: you are trying to access an invalid local buffer");
 
         // If the cell dimension is requested, return a reference to the `LocalBuffer`.
-        if constexpr (Dimension >= CellDimension)
+        using ItemType = std::decay_t<decltype(std::get<Dimension>(local_view))>;
+
+        if constexpr (Dimension >= CellDimension || std::tuple_size_v<ItemType> == 1)
         {
             return std::get<Dimension>(local_view)[0];
         }
@@ -198,6 +203,7 @@ namespace HPM::dof
         {
             return std::get<Dimension>(local_view);
         }
+        
     }
 
     //!
