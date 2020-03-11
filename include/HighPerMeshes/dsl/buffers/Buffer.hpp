@@ -74,9 +74,9 @@ namespace HPM
 
         std::size_t GetSize() const { return data.size(); }
 
-        const auto begin() const { return data.begin(); }
+        auto begin() const { return data.begin(); }
 
-        const auto end() const { return data.end(); }
+        auto end() const { return data.end(); }
 
       public:
         std::vector<T, Allocator> data;
