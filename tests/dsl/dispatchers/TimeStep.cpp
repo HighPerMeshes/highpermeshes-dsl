@@ -45,7 +45,7 @@ TEST(SequentialDispatcherTest, TimeSteps)
 
   //Works for one time step
   {
-    Buffer<int, std::decay_t<decltype(mesh)>, dataType::ConstexprArray<std::size_t, 0, 0, 0, 1>, std::allocator<int>> buffer{mesh, {}, {}};
+    Buffer<int, std::decay_t<decltype(mesh)>, dataType::ConstexprArray<std::size_t, 0, 0, 0, 1, 0>, std::allocator<int>> buffer{mesh, {}, {}};
     set_data(buffer);
     execute_kernel(buffer, 1);
     check_results(buffer, 1);
@@ -53,7 +53,7 @@ TEST(SequentialDispatcherTest, TimeSteps)
 
   //Works for multiple time step
   {
-    Buffer<int, std::decay_t<decltype(mesh)>, dataType::ConstexprArray<std::size_t, 0, 0, 0, 5>, std::allocator<int>> buffer{mesh, {}, {}};
+    Buffer<int, std::decay_t<decltype(mesh)>, dataType::ConstexprArray<std::size_t, 0, 0, 0, 5, 0>, std::allocator<int>> buffer{mesh, {}, {}};
     set_data(buffer);
     execute_kernel(buffer, 5);
     check_results(buffer, 5);
@@ -61,7 +61,7 @@ TEST(SequentialDispatcherTest, TimeSteps)
 
   //Works for zero time steps
   {
-    Buffer<int, std::decay_t<decltype(mesh)>, dataType::ConstexprArray<std::size_t, 0, 0, 0, 1>, std::allocator<int>> buffer{mesh, {}, {}};
+    Buffer<int, std::decay_t<decltype(mesh)>, dataType::ConstexprArray<std::size_t, 0, 0, 0, 1, 0>, std::allocator<int>> buffer{mesh, {}, {}};
     set_data(buffer);
     execute_kernel(buffer, 0);
     EXPECT_EQ(buffer[0], -1);
@@ -88,7 +88,7 @@ TEST(SequentialDispatcherTest, TimeSteps)
 
   //Works for multiple kernels / one time step
   {
-    Buffer<int, std::decay_t<decltype(mesh)>, dataType::ConstexprArray<std::size_t, 0, 0, 0, 1>, std::allocator<int>> buffer{mesh, {}, {}};
+    Buffer<int, std::decay_t<decltype(mesh)>, dataType::ConstexprArray<std::size_t, 0, 0, 0, 1, 0>, std::allocator<int>> buffer{mesh, {}, {}};
     set_data(buffer);
     execute_multiple_kernels(buffer, 1);
     check_results(buffer, 1);
@@ -96,7 +96,7 @@ TEST(SequentialDispatcherTest, TimeSteps)
 
   //Works for multiple kernels / multiple time steps
   {
-    Buffer<int, std::decay_t<decltype(mesh)>, dataType::ConstexprArray<std::size_t, 0, 0, 0, 5>, std::allocator<int>> buffer{mesh, {}, {}};
+    Buffer<int, std::decay_t<decltype(mesh)>, dataType::ConstexprArray<std::size_t, 0, 0, 0, 5, 0>, std::allocator<int>> buffer{mesh, {}, {}};
     set_data(buffer);
     execute_multiple_kernels(buffer, 5);
     check_results(buffer, 5);
@@ -104,7 +104,7 @@ TEST(SequentialDispatcherTest, TimeSteps)
 
   //Works for multiple kernels / zero time steps
   {
-    Buffer<int, std::decay_t<decltype(mesh)>, dataType::ConstexprArray<std::size_t, 0, 0, 0, 1>, std::allocator<int>> buffer{mesh, {}, {}};
+    Buffer<int, std::decay_t<decltype(mesh)>, dataType::ConstexprArray<std::size_t, 0, 0, 0, 1, 0>, std::allocator<int>> buffer{mesh, {}, {}};
     set_data(buffer);
     execute_multiple_kernels(buffer, 0);
     EXPECT_EQ(buffer[0], -1);
