@@ -31,9 +31,9 @@ namespace HPM
 
         auto GetDofOffsets() const
         {
-            std::array<std::size_t, MeshT::CellDimension + 1> offsets;
+            std::array<std::size_t, MeshT::CellDimension + 2> offsets;
 
-            ::HPM::auxiliary::ConstexprFor<0, MeshT::CellDimension + 1>([&offsets, this] (const auto Dimension) {
+            ::HPM::auxiliary::ConstexprFor<0, MeshT::CellDimension + 2>([&offsets, this] (const auto Dimension) {
                 offsets[Dimension] = ::HPM::dof::GetOffset<Dimension>(mesh, dofs, 0);
             });
 
@@ -41,7 +41,7 @@ namespace HPM
         }
 
       public:
-        BufferBase(const MeshT& mesh, const std::array<std::size_t, MeshT::CellDimension + 1>& dofs) : mesh(mesh), dofs(dofs), offsets(GetDofOffsets()) {}
+        BufferBase(const MeshT& mesh, const std::array<std::size_t, MeshT::CellDimension + 2>& dofs) : mesh(mesh), dofs(dofs), offsets(GetDofOffsets()) {}
 
         const auto& GetDofs() const { return dofs; }
 
@@ -61,8 +61,8 @@ namespace HPM
 
       protected:
         const MeshT& mesh;
-        const dataType::ConstArray<std::size_t, MeshT::CellDimension + 1> dofs;
-        const std::array<std::size_t, MeshT::CellDimension + 1> offsets;
+        const dataType::ConstArray<std::size_t, MeshT::CellDimension + 2> dofs;
+        const std::array<std::size_t, MeshT::CellDimension + 2> offsets;
     };
 } // namespace HPM
 
