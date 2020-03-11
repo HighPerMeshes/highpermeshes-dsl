@@ -47,6 +47,7 @@ namespace HPM
         DistributedBuffer(const std::size_t L1_index, MeshT const& mesh, const DofT dofs = DofT{}, Allocator const allocator = Allocator{}) : Base(mesh, dofs.Get()), data(allocator)
         {
             //! For each entity in the local range go through all DoF-Dimensions and the corresponding indices and assign them a position in the local buffer space.
+            const std::size_t num_global_dofs = dofs.template At<MeshT::CellDimension + 1>();
             std::size_t local_index = dofs.template At<MeshT::CellDimension + 1>(); // global dofs first
 
             ::HPM::auxiliary::ConstexprFor<0, MeshT::CellDimension + 1>([this, &mesh, &dofs, L1_index, &local_index](const auto Dimension) mutable {
@@ -66,7 +67,7 @@ namespace HPM
                 }
             });
 
-            data.resize(global_to_local_index.size());
+            data.resize(num_global_dofs + global_to_local_index.size());
         }
 
         //! \return Given an index, return the corresponding buffer entry
@@ -165,6 +166,10 @@ namespace HPM
         }
 
         auto GetSize() { return data.size(); }
+
+        auto begin() const { return data.begin(); }
+
+        auto end() const { return data.end(); }
 
       private:
         using Base::mesh;
