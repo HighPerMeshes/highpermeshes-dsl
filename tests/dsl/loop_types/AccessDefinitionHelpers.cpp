@@ -79,7 +79,7 @@ TEST_F(AccessDefinitionHelpers, Face)
 
     dispatcher.Execute(ForEachEntity(mesh.GetEntityRange<FaceDim>(), std::tuple(ReadWrite(Face(field))), [](const auto&, const auto&, auto& lvs) {
         auto& face = dof::GetDofs<FaceDim>(std::get<0>(lvs));
-        face[0][0] += 1;
+        face[0] += 1;
     }));
 
     auto from = cube.NumCells;
@@ -93,7 +93,7 @@ TEST_F(AccessDefinitionHelpers, Edge)
 
     dispatcher.Execute(ForEachEntity(mesh.GetEntityRange<EdgeDim>(), std::tuple(ReadWrite(Edge(field))), [](const auto&, const auto&, auto& lvs) {
         auto& edge = dof::GetDofs<EdgeDim>(std::get<0>(lvs));
-        edge[0][0] += 1;
+        edge[0] += 1;
     }));
 
     auto from = cube.NumCells + cube.NumFaces;
@@ -107,7 +107,7 @@ TEST_F(AccessDefinitionHelpers, Node)
 
     dispatcher.Execute(ForEachEntity(mesh.GetEntityRange<NodeDim>(), std::tuple(ReadWrite(Node(field))), [](const auto&, const auto&, auto& lvs) {
         auto& node = dof::GetDofs<NodeDim>(std::get<0>(lvs));
-        node[0][0] += 1;
+        node[0] += 1;
     }));
 
     auto from = cube.NumCells + cube.NumFaces + cube.NumEdges;
@@ -141,11 +141,11 @@ TEST_F(AccessDefinitionHelpers, AllFromCell)
                                          // If the considered entity does not belong to the middle cell
                                          if (containingCells.size() == 1)
                                          {
-                                             EXPECT_EQ(face[0][0], 1);
+                                             EXPECT_EQ(face[0], 1);
                                          }
                                          else
                                          {
-                                             EXPECT_EQ(face[0][0], 2);
+                                             EXPECT_EQ(face[0], 2);
                                          }
                                      }),
                        ForEachEntity(mesh.GetEntityRange<EdgeDim>(), std::tuple{Read(Edge(field))},
@@ -157,11 +157,11 @@ TEST_F(AccessDefinitionHelpers, AllFromCell)
                                          // If the considered entity does not belong to the middle cell
                                          if (containingCells.size() == 1)
                                          {
-                                             EXPECT_EQ(edge[0][0], 1);
+                                             EXPECT_EQ(edge[0], 1);
                                          }
                                          else
                                          {
-                                             EXPECT_EQ(edge[0][0], 3);
+                                             EXPECT_EQ(edge[0], 3);
                                          }
                                      }),
                        ForEachEntity(mesh.GetEntityRange<NodeDim>(), std::tuple{Read(Node(field))}, [](const auto& entity, const auto&, auto& lvs) {
@@ -172,11 +172,11 @@ TEST_F(AccessDefinitionHelpers, AllFromCell)
                            // If the considered entity does not belong to the middle cell
                            if (containingCells.size() == 1)
                            {
-                               EXPECT_EQ(node[0][0], 1);
+                               EXPECT_EQ(node[0], 1);
                            }
                            else
                            {
-                               EXPECT_EQ(node[0][0], 4);
+                               EXPECT_EQ(node[0], 4);
                            }
                        }));
 }
