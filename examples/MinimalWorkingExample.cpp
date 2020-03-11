@@ -37,7 +37,6 @@ int main()
 
     // Degrees of freedom, which are referred to `dofs` most of the time, allow us to associate entities of the mesh with space in a buffer.
     // In this example, we define just one degree of freedom for each face and each cell in the mesh 
-    //constexpr auto dofs= dof::MakeDofs<0, 0, 0, 1>();
     constexpr auto dofs= dof::MakeDofs<0, 0, 0, 1, 0>();
 
     // Here we allocate a buffer and see the benefits of leaving the buffer generation to the runtime system.
