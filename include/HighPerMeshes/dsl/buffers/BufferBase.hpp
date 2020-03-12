@@ -46,12 +46,11 @@ namespace HPM
         const auto& GetDofs() const { return dofs; }
 
         template <std::size_t Dimension>
-        auto GetDofIndices(const std::size_t entity_index = 0) const -> std::vector<std::size_t>
+        auto GetDofIndices(const std::size_t entity_index = 0UL) const -> std::vector<std::size_t>
         {
             // Global dofs are the same for all entities.
-            assert(Dimension != (MeshT::CellDimension + 1) || (Dimension == (MeshT::CellDimension + 1) && entity_index == 0));
-
-            const std::size_t offset = offsets[Dimension] + entity_index * dofs.template At<Dimension>();
+            const std::size_t index = (Dimension == (MeshT::CellDimension + 1) ? 0UL : entity_index);
+            const std::size_t offset = offsets[Dimension] + index * dofs.template At<Dimension>();
             std::vector<std::size_t> indices(dofs.template At<Dimension>());
 
             for (std::size_t i = 0; i < indices.size(); ++i)
