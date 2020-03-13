@@ -44,7 +44,9 @@ namespace HPM
         using DofT = DofT_;
 
         //! \param L1_index The index of the global partition this buffer is defined on.
-        DistributedBuffer(const std::size_t L1_index, MeshT const& mesh, const DofT dofs = DofT{}, Allocator const allocator = Allocator{}) : Base(mesh, dofs.Get()), data(allocator)
+        DistributedBuffer(const std::size_t L1_index, MeshT const& mesh, const DofT dofs = DofT{}, Allocator const allocator = Allocator{}) 
+            : 
+            Base(mesh, dofs.Get()), data(allocator)
         {
             //! For each entity in the local range go through all DoF-Dimensions and the corresponding indices and assign them a position in the local buffer space.
             std::size_t local_index = 0;
@@ -62,9 +64,13 @@ namespace HPM
                     {
                         global_to_local_index.emplace(offset + dof, local_index++);
                     }
+
+                    local_offsets[MeshT::CellDimension + 1] = 0;
                 }
                 else
                 {
+                    local_offsets[Dimension] = local_index;
+
                     for (auto L2 : mesh.L1PToL2P(L1_index))
                     {
                         for (const auto& entity : mesh.template L2PToEntity<Dimension>(L2))
@@ -106,8 +112,6 @@ namespace HPM
         auto operator[](const std::size_t index) -> T& { return data[global_to_local_index[index]]; }
 
         auto operator[](const std::size_t index) const -> T const& { return data[global_to_local_index.at(index)]; }
-
-        const auto& GetDofs() const { return dofs; }
 
         //! \return Given a set of indices, GetRange returns the RandomAccessRange corresponding to these indices
         //!
@@ -178,17 +182,47 @@ namespace HPM
             return ::HPM::iterator::RandomAccessRange{data, std::move(adjusted_indices)};
         }
 
+        //! \return Start position and size of the dofs partition in `data` for a given `dimension`.
+        auto GetDofPartition(const std::size_t dimension) const -> std::pair<std::size_t, std::size_t>
+        {
+            assert(dimension <= (MeshT::CellDimension + 1));
+
+            // Global dofs.
+            if (dimension == (MeshT::CellDimension + 1))
+            {
+                return {local_offsets.at(dimension), dofs.At(dimension)};
+            }
+            // Node dofs: these are the last ones in `data`.
+            else if (dimension == 0)
+            {
+                return {local_offsets.at(dimension), data.size() - local_offsets.at(dimension)};
+            }
+            else
+            {
+                return {local_offsets.at(dimension), local_offsets.at(dimension - 1) - local_offsets.at(dimension)};
+            }
+        }
+
         auto GetSize() { return data.size(); }
+
+        T* GetData() { return data.data(); };
+
+        const T* GetData() const { return data.data(); };
+
+        auto begin() { return data.begin(); }
 
         auto begin() const { return data.begin(); }
 
+        auto end() { return data.end(); }
+
         auto end() const { return data.end(); }
 
-      private:
+      protected:
         using Base::mesh;
         using Base::dofs;
         std::vector<T, Allocator> data;
         std::unordered_map<std::size_t, std::size_t> global_to_local_index; //! Mapping from the global index to the vector index
+        std::array<std::size_t, MeshT::CellDimension + 2> local_offsets;
     };
 } // namespace HPM
 
