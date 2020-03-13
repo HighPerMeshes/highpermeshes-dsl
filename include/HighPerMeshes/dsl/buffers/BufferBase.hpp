@@ -43,8 +43,6 @@ namespace HPM
       public:
         BufferBase(const MeshT& mesh, const std::array<std::size_t, MeshT::CellDimension + 2>& dofs) : mesh(mesh), dofs(dofs), offsets(GetDofOffsets()) {}
 
-        const auto& GetDofs() const { return dofs; }
-
         template <std::size_t Dimension>
         auto GetDofIndices(const std::size_t entity_index = 0UL) const -> std::vector<std::size_t>
         {
@@ -60,6 +58,10 @@ namespace HPM
 
             return indices;
         }
+
+        const auto& GetMesh() const { return mesh; }
+
+        const auto& GetDofs() const { return dofs; }
 
       protected:
         const MeshT& mesh;

@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <memory>
 #include <vector>
+#include <utility>
 
 #include <HighPerMeshes/common/Iterator.hpp>
 #include <HighPerMeshes/dsl/buffers/BufferBase.hpp>
@@ -32,13 +33,14 @@ namespace HPM
     template <typename T, typename MeshT_, typename DofT_, typename Allocator = std::allocator<T>>
     class Buffer : public BufferBase<MeshT_>
     {
-        template <typename MeshT, typename DofT>
-        inline auto GetTotalNumDofs(const MeshT& mesh, const DofT& dofs) const
+        using Base = BufferBase<MeshT_>;
+
+        inline auto GetTotalNumDofs() const
         {
             return dof::GetOffset<0>(mesh, dofs, 0) + dofs.template At<0>() * mesh.template GetNumEntities<0>();
         }
 
-      public:
+    public:
         using ValueT = T;
         using MeshT = MeshT_;
         using DofT = DofT_;
@@ -46,7 +48,8 @@ namespace HPM
         static_assert(DofT::Size() == MeshT::CellDimension + 2, "error: DofT has wrong size");
 
         Buffer(const MeshT& mesh, const DofT dofs = DofT{}, const Allocator& allocator = Allocator())
-            : BufferBase<MeshT>(mesh, dofs.Get()), data(GetTotalNumDofs(mesh, dofs), allocator), mesh(mesh), dofs(dofs)
+            :
+            BufferBase<MeshT>(mesh, dofs.Get()), data(GetTotalNumDofs(), allocator)
         {
         }
 
@@ -70,18 +73,46 @@ namespace HPM
         auto GetRange(const std::set<std::size_t>& indices) const { return ::HPM::iterator::RandomAccessRange{data, indices}; }
         //! \}
 
-        auto GetDofs() const -> const DofT& { return dofs; }
+        //! \return Start position and size of the dofs partition in `data` for a given `dimension`.
+        auto GetDofPartition(const std::size_t dimension) const -> std::pair<std::size_t, std::size_t>
+        {
+            assert(dimension <= (MeshT::CellDimension + 1));
 
-        std::size_t GetSize() const { return data.size(); }
+            // Global dofs.
+            if (dimension == (MeshT::CellDimension + 1))
+            {
+                return {offsets.at(dimension), dofs.At(dimension)};
+            }
+            // Node dofs: these are the last ones in `data`.
+            else if (dimension == 0)
+            {
+                return {offsets.at(dimension), data.size() - offsets.at(dimension)};
+            }
+            else
+            {
+                return {offsets.at(dimension), offsets.at(dimension - 1) - offsets.at(dimension)};
+            }
+        }
+
+        auto GetSize() const { return data.size(); }
+
+        T* GetData() { return data.data(); };
+
+        const T* GetData() const { return data.data(); };
+
+        auto begin() { return data.begin(); }
 
         auto begin() const { return data.begin(); }
 
+        auto end() { return data.end(); }
+
         auto end() const { return data.end(); }
 
-      public:
+    protected:
+        using Base::mesh;
+        using Base::dofs;
+        using Base::offsets;
         std::vector<T, Allocator> data;
-        const MeshT& mesh;
-        const DofT dofs;
     };
 
 } // namespace HPM
