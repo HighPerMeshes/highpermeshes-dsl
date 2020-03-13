@@ -156,6 +156,12 @@ namespace HPM::atomic
         return ExecuteAndFetch(variable, [&value](const T& current_value) { return current_value + value; });
     }
 
+    template <typename T>
+    auto AtomicAdd(T& variable, const T& value)
+    {
+        return AddAndFetch(variable, value);
+    }
+
     //!
     //! \brief An atomic min operation.
     //!
@@ -172,6 +178,12 @@ namespace HPM::atomic
         return FetchAndExecute(variable, [&proposed_min](const T& current_value) { return std::min(current_value, proposed_min); });
     }
 
+    template <typename T>
+    auto AtomicMin(T& variable, const T& proposed_min)
+    {
+        return Min(variable, proposed_min);
+    }
+
     //!
     //! \brief An atomic max operation.
     //!
@@ -186,6 +198,12 @@ namespace HPM::atomic
     auto Max(T& variable, const T& proposed_max)
     {
         return FetchAndExecute(variable, [&proposed_max](const T& current_value) { return std::max(current_value, proposed_max); });
+    }
+
+    template <typename T>
+    auto AtomicMax(T& variable, const T& proposed_max)
+    {
+        return Max(variable, proposed_max);
     }
 } // namespace HPM::atomic
 
