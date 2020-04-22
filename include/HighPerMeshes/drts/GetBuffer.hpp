@@ -21,9 +21,9 @@ namespace HPM
     struct GetBuffer
     {
         template <typename T, typename MeshT, typename DofT>
-        static auto Get(const MeshT& mesh, const DofT& dofs)
+        static auto Get(const MeshT& mesh, const DofT& dofs, const Allocator<T>& allocator = {})
         {
-            return Buffer<T, MeshT, DofT, Allocator<T>>(mesh, dofs, {});
+            return Buffer<T, MeshT, DofT, Allocator<T>>(mesh, dofs, allocator);
         }
     };
 } // namespace HPM

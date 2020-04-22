@@ -78,16 +78,16 @@ namespace HPM::drts
         //! \param dofs_per_entity The ith entry of dofs_per_entity specifies how many degrees of freedom the ith dimension has, i. e.
         //!                      how much space should be allocated for an element in the given dimension.
         //!
-        template <typename BlockT, typename MeshT, typename DofT>
-        auto GetBuffer(MeshT const& mesh, DofT dofs_per_entity)
+        template <typename BlockT, typename MeshT, typename DofT, typename Allocator = std::allocator<BlockT>>
+        auto GetBuffer(MeshT const& mesh, DofT dofs_per_entity, const Allocator& allocator = {})
         {
             if constexpr (internal::GetBufferInvocable<BufferHandler, BlockT, Self, MeshT const&, DofT>)
             {
-                return buffer_handler.template Get<BlockT>(*this, mesh, dofs_per_entity);
+                return buffer_handler.template Get<BlockT>(*this, mesh, dofs_per_entity, allocator);
             }
             else
             {
-                return buffer_handler.template Get<BlockT>(mesh, dofs_per_entity);
+                return buffer_handler.template Get<BlockT>(mesh, dofs_per_entity, allocator);
             }
         }
 
