@@ -11,6 +11,8 @@
 
 #include <HighPerMeshes/dsl/data_access/LocalView.hpp>
 
+template<typename T> struct DEBUG;
+
 //!
 //! \name
 //! LoopImplementations
@@ -67,10 +69,15 @@ namespace HPM::internal
         auto operator()(EntityRange&& entities, AccessDefinitions& access_definitions, LoopBody loop_body) const
         {
             #pragma omp parallel for
-            for (auto it = entities.begin(); it != entities.end(); ++it)
+            for (   
+                size_t offset = 0; 
+                offset < entities.GetRangeSize(); 
+                ++offset)
             {
-                auto&& localVector{LocalView::Create(access_definitions, *it)};
-                loop_body(*it, localVector);
+                auto entity_iter = entities.begin();
+                entity_iter += offset;
+                auto&& localVector{LocalView::Create(access_definitions, *entity_iter)};
+                loop_body(*entity_iter, localVector);
             }
         }
     };
@@ -132,10 +139,16 @@ namespace HPM::internal
         {
             constexpr std::size_t NumSubEntities = EntityRange::EntityT::Topology::template GetNumEntities<SubDimension>();
             
-            // #pragma omp parallel for
-            for (auto const& entity : std::forward<EntityRange>(entities))
+            #pragma omp parallel for
+            for (
+                size_t offset = 0;
+                offset < entities.GetRangeSize();
+                ++offset)
             {
-                auto it = entity.GetTopology().template GetEntities<SubDimension>().begin();
+                auto entity_iter = entities.begin();
+                entity_iter += offset;
+
+                auto it = (*entity_iter).GetTopology().template GetEntities<SubDimension>().begin();
                 auto&& local_vectors{LocalView::CreateMultiple(access_definitions, it, std::make_index_sequence<NumSubEntities>{})};
 
                 for (std::size_t i = 0; i < NumSubEntities; ++i, ++it)
