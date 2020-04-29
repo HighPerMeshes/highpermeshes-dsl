@@ -14,6 +14,7 @@
 
 #include <HighPerMeshes/common/Iterator.hpp>
 #include <HighPerMeshes/dsl/buffers/BufferBase.hpp>
+#include <HighPerMeshes/dsl/data_access/DofPartition.hpp>
 
 namespace HPM
 {
@@ -183,23 +184,28 @@ namespace HPM
         }
 
         //! \return Start position and size of the dofs partition in `data` for a given `dimension`.
-        auto GetDofPartition(const std::size_t dimension) const -> std::pair<std::size_t, std::size_t>
+        auto GetDofPartition(const std::size_t dimension) const -> DofPartition<const std::vector<T, Allocator>>
         {
             assert(dimension <= (MeshT::CellDimension + 1));
 
             // Global dofs.
             if (dimension == (MeshT::CellDimension + 1))
             {
-                return {local_offsets.at(dimension), dofs.At(dimension)};
+                return {data, local_offsets.at(dimension), dofs.At(dimension), dimension};
             }
-            // Node dofs: these are the last ones in `data`.
-            else if (dimension == 0)
+            // Cell dofs.
+            else if (dimension == MeshT::CellDimension)
             {
-                return {local_offsets.at(dimension), data.size() - local_offsets.at(dimension)};
+                return {data, local_offsets.at(dimension), local_offsets.at(dimension - 1) - local_offsets.at(dimension), dimension};
             }
-            else
+            // All other dofs.
+            else 
             {
-                return {local_offsets.at(dimension), local_offsets.at(dimension - 1) - local_offsets.at(dimension)};
+                // Data consistency cannot be assured, because of shared sub-entities!
+                assert(dimension >= MeshT::CellDimension);
+
+                // Return an empty partition.
+                return {data, 0, 0, dimension};
             }
         }
 
