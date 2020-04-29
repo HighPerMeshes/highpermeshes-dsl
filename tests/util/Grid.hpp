@@ -80,6 +80,8 @@ struct Grid<3>
 
     std::vector<CoordinateT> nodes;
     std::vector<std::array<std::size_t, 4>> simplices;
+
+    GridMesh mesh{nodes, simplices};
 };
 
 template <>

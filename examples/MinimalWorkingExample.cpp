@@ -1,5 +1,7 @@
 #include <HighPerMeshes.hpp>
 
+#include <Grid.hpp>
+
 using namespace HPM;
 
 int main()
@@ -23,11 +25,11 @@ int main()
     // The CoordinateType tells us which data type and which dimensionality to use for a given mesh. 
     using CoordinateType = dataType::Vec<double, 3>;
 
-    using Mesh = mesh::Mesh<CoordinateType, HPM::entity::Simplex>;
-    const Mesh mesh = Mesh::template CreateFromFile<HPM::auxiliary::GambitMeshFileReader>(meshFile);
+    Grid<3> grid {{ 100 , 100, 100 }};
+    const auto& mesh = grid.mesh;
 
     //We store the CellDimension of the mesh because we're goint to use it more often later in the example.
-    static constexpr auto CellDimension = Mesh::CellDimension;
+    static constexpr auto CellDimension = 3;
 
     // We can determine what entities we want to iterate over by using the member functions of the mesh
     // `mesh.GetEntityRange` allows us to iterate over all entities of a certain dimension, in this case we want to iterate over each cell
@@ -49,34 +51,73 @@ int main()
     // In this case, we use a SequentialDispatcher to just execute the specified kernels
     SequentialDispatcher dispatcher;
 
-
     // The execute function executes a number of kernels for a number of time steps.
     // We're going to introduce both possible kernel types in this example
-    dispatcher.Execute(
-        // Repeat all specified loops 10 times. This can be omitted if the steps are only to be executed once
-        iterator::Range{10}, 
+    
+    auto time =
+    auxiliary::MeasureTime([&](){
+        dispatcher.Execute(
+            // Repeat all specified loops 10 times. This can be omitted if the steps are only to be executed once
+            iterator::Range{10}, 
 
-        // First, we iterate over all entities. 
-        // For this purpose, we have `ForEachEntity` that iterates over each entity in the specified range of entities
-        ForEachEntity(
+            // First, we iterate over all entities. 
+            // For this purpose, we have `ForEachEntity` that iterates over each entity in the specified range of entities
+            ForEachEntity(
 
-            //Iterate over the range of entities we have specified
-            AllCells,
+                //Iterate over the range of entities we have specified
+                AllCells,
 
-            //We further
-            std::tuple(Write(Cell(buffer))),
+                //We further
+                std::tuple(Write(Cell(buffer))),
 
-            // Cell is the current entity, its
-            // step specifies the repetition
-            // local_view is used to access the local representation of the passed loops. They are ordered in the same way as the tuple specified just before it
-            [&](const auto &, auto, auto local_view) {
+                // Cell is the current entity, its
+                // step specifies the repetition
+                // local_view is used to access the local representation of the passed loops. They are ordered in the same way as the tuple specified just before it
+                [&](const auto &, auto, auto local_view) {
 
-                auto& bufferAccess = dof::GetDofs<CellDimension>(std::get<0>(local_view));
+                    auto& bufferAccess = dof::GetDofs<CellDimension>(std::get<0>(local_view));
 
-                const auto dof = 0;
+                    const auto dof = 0;
 
-                bufferAccess[dof] = 1;
+                    bufferAccess[dof] = 1;
 
-            })
-    );
+                })
+        );
+    });
+    std::cout << "normal execute: " << time.count() << "ns\n";
+
+    time =
+    auxiliary::MeasureTime([&](){
+        dispatcher.Execute(
+            // Repeat all specified loops 10 times. This can be omitted if the steps are only to be executed once
+            iterator::Range{10}, 
+
+            // First, we iterate over all entities. 
+            // For this purpose, we have `ForEachEntity` that iterates over each entity in the specified range of entities
+            ForEachEntity(
+
+                //Iterate over the range of entities we have specified
+                AllCells,
+
+                //We further
+                std::tuple(Write(Cell(buffer))),
+
+                // Cell is the current entity, its
+                // step specifies the repetition
+                // local_view is used to access the local representation of the passed loops. They are ordered in the same way as the tuple specified just before it
+                [&](const auto &, auto, auto local_view) {
+
+                    auto& bufferAccess = dof::GetDofs<CellDimension>(std::get<0>(local_view));
+
+                    const auto dof = 0;
+
+                    bufferAccess[dof] = 1;
+
+                },
+                
+                HPM::internal::OpenMP_ForEachEntity<CellDimension>{}
+            )
+        );
+    });
+    std::cout << "openmp execute: " << time.count() << "ns\n";
 }
