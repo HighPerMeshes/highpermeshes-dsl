@@ -193,14 +193,19 @@ namespace HPM
             {
                 return {data, local_offsets.at(dimension), dofs.At(dimension), dimension};
             }
-            // Node dofs: these are the last ones in `data`.
-            else if (dimension == 0)
-            {
-                return {data, local_offsets.at(dimension), data.size() - local_offsets.at(dimension), dimension};
-            }
-            else
+            // Cell dofs.
+            else if (dimension == MeshT::CellDimension)
             {
                 return {data, local_offsets.at(dimension), local_offsets.at(dimension - 1) - local_offsets.at(dimension), dimension};
+            }
+            // All other dofs.
+            else 
+            {
+                // Data consistency cannot be assured, because of shared sub-entities!
+                assert(dimension >= MeshT::CellDimension);
+
+                // Return an empty partition.
+                return {data, 0, 0, dimension};
             }
         }
 
