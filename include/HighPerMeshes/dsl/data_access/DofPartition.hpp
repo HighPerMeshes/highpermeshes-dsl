@@ -24,6 +24,20 @@ namespace HPM
 
         auto end() const { return data.begin() + offset + size; }
 
+        auto& operator[](const std::size_t index)
+        { 
+            assert(index < size);
+
+            return data[offset + index];
+        }
+
+        const auto& operator[](const std::size_t index) const
+        { 
+            assert(index < size);
+
+            return data[offset + index];
+        }
+
         auto GetSize() const { return size; }
 
         auto GetDimension() const { return dimension; }
