@@ -258,7 +258,7 @@ namespace HPM::iterator
             //! \param it another entity iterator
             //! \return `true` if this iterator and `it` have the same state, otherwise `false`
             //!
-            inline auto operator==(const EntityIterator& it) const { return (&mesh == &it.mesh) && (value == it.value); }
+            inline auto operator==(const EntityIterator& it) const { return (value == it.value) && (&mesh == &it.mesh); }
 
             //!
             //! \brief Comparison operator.
@@ -274,7 +274,7 @@ namespace HPM::iterator
             //! \param it another entity iterator
             //! \return `false` if this iterator is larger than `it`, otherwise `true`
             //!
-            inline auto operator<(const EntityIterator& it) const { return (&mesh == &it.mesh) && (value < it.value); }
+            inline auto operator<(const EntityIterator& it) const { return (value < it.value) && (&mesh == &it.mesh); }
 
             //!
             //! \brief Dereference operation.
@@ -342,27 +342,6 @@ namespace HPM::iterator
             //!
             IndexedEntityIterator(const MeshT& mesh, const std::size_t value, const std::vector<std::size_t>& index_set, const std::size_t containing_mesh_entity_index = MeshT::InvalidIndex)
                 : Base(mesh, value, containing_mesh_entity_index), index_set(index_set)
-            {
-            }
-
-            //!
-            //! \brief Constructor.
-            //!
-            //! Creates a forward iterator with its initial state set to `value` and with an index field for the entity indexing.
-            //! This constructor takes ownership of the index set.
-            //! It is used in all cases where a temporary field is provided: a hard copy is created internally and referenced through `index_set` afterwards.
-            //!
-            //! \param mesh the associated mesh
-            //! \param value the initial state of the iterator: used for the increment operation
-            //! \param index_set a temporary container object holding the indices of the entities
-            //! \param containing_mesh_entity_index the index of the containing mesh entity
-            //!
-            IndexedEntityIterator(const MeshT& mesh, const std::size_t value, std::vector<std::size_t>&& index_set, const std::size_t containing_mesh_entity_index = MeshT::InvalidIndex)
-                : Base(mesh, value, containing_mesh_entity_index),
-                    // Copy the index set.
-                    index_set_internal(index_set),
-                    // Set up a reference to the internal copy.
-                    index_set(index_set_internal)
             {
             }
 
@@ -439,8 +418,7 @@ namespace HPM::iterator
             using Base::containing_mesh_entity_index;
             using Base::mesh;
             using Base::value;
-            const std::vector<std::size_t> index_set_internal;
-            const std::vector<std::size_t> index_set;
+            const std::vector<std::size_t>& index_set;
         };
     } // namespace internal
 
@@ -532,10 +510,9 @@ namespace HPM::iterator
         //! \param containing_mesh_entity_index the index of the containing mesh entity
         //!
         IndexedEntityRange(const MeshT& mesh, const std::vector<std::size_t>& index_set, const std::size_t containing_mesh_entity_index = MeshT::InvalidIndex)
-            : it_begin(mesh, 0, index_set, containing_mesh_entity_index), it_end(mesh, std::distance(index_set.begin(), index_set.end()), {}), range_size(index_set.size())
+            : mesh { mesh }, index_set { index_set }, containing_mesh_entity_index { containing_mesh_entity_index }
         {
         }
-
         //!
         //! \brief Constructor.
         //!
@@ -548,7 +525,7 @@ namespace HPM::iterator
         //! \param containing_mesh_entity_index the index of the containing mesh entity
         //!
         IndexedEntityRange(const MeshT& mesh, std::vector<std::size_t>&& index_set, const std::size_t containing_mesh_entity_index = MeshT::InvalidIndex)
-            : it_begin(mesh, 0, std::move(index_set), containing_mesh_entity_index), it_end(mesh, std::distance(index_set.begin(), index_set.end()), {}), range_size(index_set.size())
+            : mesh { mesh }, index_set { std::move(index_set) }, containing_mesh_entity_index { containing_mesh_entity_index }
         {
         }
 
@@ -557,26 +534,27 @@ namespace HPM::iterator
         //!
         //! \return an iterator pointing to the begin of the range
         //!
-        inline auto begin() const { return it_begin; }
+        inline auto begin() const -> IteratorT { return { mesh, 0, index_set, containing_mesh_entity_index }; }
 
         //!
         //! \brief Get an iterator pointing to the end of the range.
         //!
         //! \return an iterator pointing to the end of the range
         //!
-        inline auto end() const { return it_end; }
+        inline auto end() const -> IteratorT{ return { mesh, GetRangeSize(), index_set, containing_mesh_entity_index }; }
 
         //!
         //! \brief Get the extent of this range.
         //!
         //! \return the extent of this range
         //!
-        inline auto GetRangeSize() const { return range_size; }
+        inline auto GetRangeSize() const { return index_set.size(); }
 
         private:
-        const IteratorT it_begin;
-        const IteratorT it_end;
-        const std::size_t range_size;
+
+        const MeshT& mesh;
+        const std::vector<std::size_t> index_set;
+        const std::size_t containing_mesh_entity_index;
     };
 } // namespace HPM::iterator
 

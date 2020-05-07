@@ -85,3 +85,7 @@ endif (BUILD_TESTS)
 if (BUILD_EXAMPLES)
 	add_subdirectory (examples)
 endif (BUILD_EXAMPLES)
+
+if(BUILD_BENCHMARKS)
+  add_subdirectory (benchmarks)
+endif(BUILD_BENCHMARKS)
