@@ -8,7 +8,7 @@ set (CMAKE_CXX_STANDARD 17)
 set (CMAKE_BUILD_TYPE Release)
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native -ftree-vectorize -ffast-math -Wall -Wextra -pedantic")
 set (BUILD_EXAMPLES on)
-set (BUILD_TESTS on)
+set (BUILD_TESTS off)
 
 # Create a library called "HighPerMeshes", also add an alias for the correct namespace
 add_library ( HighPerMeshes INTERFACE)

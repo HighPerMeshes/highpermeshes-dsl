@@ -11,8 +11,6 @@
 
 #include <HighPerMeshes/dsl/data_access/LocalView.hpp>
 
-template<typename T> struct DEBUG;
-
 //!
 //! \name
 //! LoopImplementations
