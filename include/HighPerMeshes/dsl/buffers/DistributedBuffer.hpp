@@ -183,20 +183,17 @@ namespace HPM
             return ::HPM::iterator::RandomAccessRange{data, std::move(adjusted_indices)};
         }
 
+        const auto& GetDofs() const { return Base::GetDofs(); }
+
         //! \return Start position and size of the dofs partition in `data` for a given `dimension`.
-        auto GetDofPartition(const std::size_t dimension) const -> DofPartition<const std::vector<T, Allocator>>
+        auto GetDofs(const std::size_t dimension) const -> DofPartition<const std::vector<T, Allocator>>
         {
             assert(dimension <= (MeshT::CellDimension + 1));
 
-            // Global dofs.
-            if (dimension == (MeshT::CellDimension + 1))
+            // Global dofs and cell dofs.
+            if (dimension >= MeshT::CellDimension)
             {
-                return {data, local_offsets.at(dimension), dofs.At(dimension), dimension};
-            }
-            // Cell dofs.
-            else if (dimension == MeshT::CellDimension)
-            {
-                return {data, local_offsets.at(dimension), local_offsets.at(dimension - 1) - local_offsets.at(dimension), dimension};
+                return GetDofPartition(dimension);
             }
             // All other dofs.
             else 
@@ -206,6 +203,36 @@ namespace HPM
 
                 // Return an empty partition.
                 return {data, 0, 0, dimension};
+            }
+        }
+
+        //! \return Start position and size of the dofs partition in `data` for a given `entity`.
+        template <typename EntityT>
+        const auto GetDofs(const EntityT& entity) const
+        {
+            const auto& dof_partition = GetDofPartitionImplementation(EntityT::Dimension);
+
+            return dof_partition.At(entity);
+        }
+
+        //! \return Start position and size of the dofs partition in `data` for a given `dimension`.
+        auto GetDofPartition(const std::size_t dimension) const -> DofPartition<const std::vector<T, Allocator>>
+        {
+            assert(dimension <= (MeshT::CellDimension + 1));
+
+            // Global dofs.
+            if (dimension == (MeshT::CellDimension + 1))
+            {
+                return {data, local_offsets.at(dimension), dofs.At(dimension), dofs.At(dimension), dimension};
+            }
+            // Node dofs: these are the last ones in `data`.
+            else if (dimension == 0)
+            {
+                return {data, local_offsets.at(dimension), data.size() - local_offsets.at(dimension), dofs.At(dimension), dimension};
+            }
+            else
+            {
+                return {data, local_offsets.at(dimension), local_offsets.at(dimension - 1) - local_offsets.at(dimension), dofs.At(dimension), dimension};
             }
         }
 

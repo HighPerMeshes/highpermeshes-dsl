@@ -14,7 +14,7 @@ namespace HPM
     class DofPartition
     {
       public:
-        DofPartition(DataT& data, const std::size_t offset, const std::size_t size, const std::size_t dimension) : data(data), offset(offset), size(size), dimension(dimension) {}
+        DofPartition(DataT& data, const std::size_t offset, const std::size_t size, const std::size_t dofs_per_entity, const std::size_t dimension) : data(data), offset(offset), size(size), dofs_per_entity(dofs_per_entity), dimension(dimension) {}
 
         auto begin() { return data.begin() + offset; }
 
@@ -41,11 +41,29 @@ namespace HPM
         auto GetSize() const { return size; }
 
         auto GetDimension() const { return dimension; }
+
+        //! Resolve dof start position inside this partition for a given entity.
+        //!
+        //! \return DofPartition of the specified entity
+        template <typename EntityT>
+        auto At(const EntityT& entity) const -> DofPartition<DataT>
+        {
+            assert(EntityT::Dimension <= dimension);
+            
+            // Start position.
+            const std::size_t index = entity.GetTopology().GetIndex() * dofs_per_entity;
+
+            assert((index + dofs_per_entity) < size);
+
+            // Return a DofPartition that contains only the dofs of the specified entity.
+            return {data, offset + index, dofs_per_entity, dofs_per_entity, dimension};
+        }
         
       protected:
         DataT& data;
         const std::size_t offset;
         const std::size_t size;
+        const std::size_t dofs_per_entity;
         const std::size_t dimension;
     };
 } // namespace HPM
