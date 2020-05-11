@@ -77,21 +77,26 @@ namespace HPM
         //! \return Start position and size of the dofs partition in `data` for a given `dimension`.
         auto GetDofPartition(const std::size_t dimension) const -> DofPartition<const std::vector<T, Allocator>>
         {
+            return GetDofPartitionImplementation(dimension);
+        }
+
+        auto GetDofPartitionImplementation(const std::size_t dimension) const -> DofPartition<const std::vector<T, Allocator>>
+        {
             assert(dimension <= (MeshT::CellDimension + 1));
 
             // Global dofs.
             if (dimension == (MeshT::CellDimension + 1))
             {
-                return {data, offsets.at(dimension), dofs.At(dimension), dimension};
+                return {data, offsets.at(dimension), dofs.At(dimension), dofs.At(dimension), dimension};
             }
             // Node dofs: these are the last ones in `data`.
             else if (dimension == 0)
             {
-                return {data, offsets.at(dimension), data.size() - offsets.at(dimension), dimension};
+                return {data, offsets.at(dimension), data.size() - offsets.at(dimension), dofs.At(dimension), dimension};
             }
             else
             {
-                return {data, offsets.at(dimension), offsets.at(dimension - 1) - offsets.at(dimension), dimension};
+                return {data, offsets.at(dimension), offsets.at(dimension - 1) - offsets.at(dimension), dofs.At(dimension), dimension};
             }
         }
 
@@ -109,7 +114,7 @@ namespace HPM
 
         auto end() const { return data.end(); }
 
-    protected:
+      protected:
         using Base::mesh;
         using Base::dofs;
         using Base::offsets;

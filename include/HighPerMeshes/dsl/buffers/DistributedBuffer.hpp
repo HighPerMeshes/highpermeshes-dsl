@@ -188,15 +188,10 @@ namespace HPM
         {
             assert(dimension <= (MeshT::CellDimension + 1));
 
-            // Global dofs.
-            if (dimension == (MeshT::CellDimension + 1))
+            // Global dofs and cell dofs.
+            if (dimension >= MeshT::CellDimension)
             {
-                return {data, local_offsets.at(dimension), dofs.At(dimension), dimension};
-            }
-            // Cell dofs.
-            else if (dimension == MeshT::CellDimension)
-            {
-                return {data, local_offsets.at(dimension), local_offsets.at(dimension - 1) - local_offsets.at(dimension), dimension};
+                return GetDofPartitionImplementation(dimension);
             }
             // All other dofs.
             else 
@@ -206,6 +201,26 @@ namespace HPM
 
                 // Return an empty partition.
                 return {data, 0, 0, dimension};
+            }
+        }
+
+        auto GetDofPartitionImplementation(const std::size_t dimension) const -> DofPartition<const std::vector<T, Allocator>>
+        {
+            assert(dimension <= (MeshT::CellDimension + 1));
+
+            // Global dofs.
+            if (dimension == (MeshT::CellDimension + 1))
+            {
+                return {data, local_offsets.at(dimension), dofs.At(dimension), dofs.At(dimension), dimension};
+            }
+            // Node dofs: these are the last ones in `data`.
+            else if (dimension == 0)
+            {
+                return {data, local_offsets.at(dimension), data.size() - local_offsets.at(dimension), dofs.At(dimension), dimension};
+            }
+            else
+            {
+                return {data, local_offsets.at(dimension), local_offsets.at(dimension - 1) - local_offsets.at(dimension), dofs.At(dimension), dimension};
             }
         }
 
