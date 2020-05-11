@@ -74,13 +74,25 @@ namespace HPM
         auto GetRange(const std::set<std::size_t>& indices) const { return ::HPM::iterator::RandomAccessRange{data, indices}; }
         //! \}
 
+        const auto& GetDofs() const { return Base::GetDofs(); }
+
         //! \return Start position and size of the dofs partition in `data` for a given `dimension`.
-        auto GetDofPartition(const std::size_t dimension) const -> DofPartition<const std::vector<T, Allocator>>
+        auto GetDofs(const std::size_t dimension) const -> DofPartition<const std::vector<T, Allocator>>
         {
-            return GetDofPartitionImplementation(dimension);
+            return GetDofPartition(dimension);
         }
 
-        auto GetDofPartitionImplementation(const std::size_t dimension) const -> DofPartition<const std::vector<T, Allocator>>
+        //! \return Start position and size of the dofs partition in `data` for a given `entity`.
+        template <typename EntityT>
+        const auto GetDofs(const EntityT& entity) const
+        {
+            const auto& dof_partition = GetDofPartition(EntityT::Dimension);
+
+            return dof_partition.At(entity);
+        }
+
+        //! \return Start position and size of the dofs partition in `data` for a given `dimension`.
+        auto GetDofPartition(const std::size_t dimension) const -> DofPartition<const std::vector<T, Allocator>>
         {
             assert(dimension <= (MeshT::CellDimension + 1));
 

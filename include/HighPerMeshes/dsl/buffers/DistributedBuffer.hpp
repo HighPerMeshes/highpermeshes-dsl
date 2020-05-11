@@ -183,15 +183,17 @@ namespace HPM
             return ::HPM::iterator::RandomAccessRange{data, std::move(adjusted_indices)};
         }
 
+        const auto& GetDofs() const { return Base::GetDofs(); }
+
         //! \return Start position and size of the dofs partition in `data` for a given `dimension`.
-        auto GetDofPartition(const std::size_t dimension) const -> DofPartition<const std::vector<T, Allocator>>
+        auto GetDofs(const std::size_t dimension) const -> DofPartition<const std::vector<T, Allocator>>
         {
             assert(dimension <= (MeshT::CellDimension + 1));
 
             // Global dofs and cell dofs.
             if (dimension >= MeshT::CellDimension)
             {
-                return GetDofPartitionImplementation(dimension);
+                return GetDofPartition(dimension);
             }
             // All other dofs.
             else 
@@ -204,7 +206,17 @@ namespace HPM
             }
         }
 
-        auto GetDofPartitionImplementation(const std::size_t dimension) const -> DofPartition<const std::vector<T, Allocator>>
+        //! \return Start position and size of the dofs partition in `data` for a given `entity`.
+        template <typename EntityT>
+        const auto GetDofs(const EntityT& entity) const
+        {
+            const auto& dof_partition = GetDofPartitionImplementation(EntityT::Dimension);
+
+            return dof_partition.At(entity);
+        }
+
+        //! \return Start position and size of the dofs partition in `data` for a given `dimension`.
+        auto GetDofPartition(const std::size_t dimension) const -> DofPartition<const std::vector<T, Allocator>>
         {
             assert(dimension <= (MeshT::CellDimension + 1));
 
