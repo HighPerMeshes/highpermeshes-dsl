@@ -9,6 +9,9 @@
 #include <cstdint>
 #include <utility>
 
+#include <sched.h>
+#include <sys/sysinfo.h>
+
 #include <HighPerMeshes/dsl/data_access/LocalView.hpp>
 
 //!
@@ -68,6 +71,23 @@ struct OpenMP_ForEachEntity
     {
         constexpr std::size_t ChunkSize = 4;
         const std::size_t i_max = (entities.GetRangeSize() / ChunkSize) * ChunkSize;
+        static bool fix_pinning = true;
+
+        if (fix_pinning)
+        {
+            const std::size_t num_cpus = get_nprocs();
+            cpu_set_t cpu_mask;
+
+            CPU_ZERO(&cpu_mask);
+            for (std::size_t i = 0; i < num_cpus; ++i)
+            {
+                CPU_SET(i, &cpu_mask);
+            }
+
+            sched_setaffinity(0, sizeof(cpu_set_t), &cpu_mask);
+
+            fix_pinning = false;
+        }
 
 #pragma omp parallel
         {
@@ -156,6 +176,23 @@ struct OpenMP_ForEachIncidence
     auto operator()(EntityRange entities, AccessDefinitions &access_definitions, LoopBody loop_body) const
     {
         constexpr std::size_t NumSubEntities = EntityRange::EntityT::Topology::template GetNumEntities<SubDimension>();
+        static bool fix_pinning = true;
+
+        if (fix_pinning)
+        {
+            const std::size_t num_cpus = get_nprocs();
+            cpu_set_t cpu_mask;
+
+            CPU_ZERO(&cpu_mask);
+            for (std::size_t i = 0; i < num_cpus; ++i)
+            {
+                CPU_SET(i, &cpu_mask);
+            }
+
+            sched_setaffinity(0, sizeof(cpu_set_t), &cpu_mask);
+
+            fix_pinning = false;
+        }
 
 #pragma omp parallel for
         for (
