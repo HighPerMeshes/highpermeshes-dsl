@@ -10,6 +10,7 @@
 #include <utility>
 
 #include <HighPerMeshes/dsl/data_access/LocalView.hpp>
+#include <HighPerMeshes/dsl/loop_types/ExecutionPolicy.hpp>
 
 //!
 //! \name
@@ -22,17 +23,27 @@
 //! \{
 namespace HPM::internal
 {
+    using ::HPM::ExecutionPolicy;
+
     //! \brief
     //! The default implementation for the `ForEachEntity` loop
     //!
     //! \tparam
     //! Dimension_ specifies the dimension of requested entities to iterate over
     //!
-    template <std::size_t Dimension_>
+    template <std::size_t Dimension_, ExecutionPolicy Policy_>
     struct ForEachEntity
     {
+        template <typename IteratorT, std::size_t...I>
+        inline auto GetEntities(IteratorT& it, const std::size_t max_index, std::index_sequence<I...>) const -> std::array<typename IteratorT::EntityT, sizeof...(I)>
+        {
+            return {it[std::min(I, max_index)]...};
+        }
+
         //! Is used to infer the dimension of entities in operator() by the run time system.
         static constexpr std::size_t Dimension = Dimension_;
+
+        static constexpr ExecutionPolicy Policy = Policy_;
 
         //! \brief Iterates over all given `entities` and invokes `loop_body` for each of them.
         //!
@@ -66,25 +77,31 @@ namespace HPM::internal
         template <typename EntityRange, typename AccessDefinitions, typename LoopBody>
         auto operator()(EntityRange&& entities, AccessDefinitions& access_definitions, LoopBody loop_body) const
         {
-            constexpr std::size_t ChunkSize = 4;
             auto it = entities.begin();
-            const std::size_t i_max = (entities.GetRangeSize() / ChunkSize) * ChunkSize;
+            const std::size_t num_entities = entities.GetRangeSize();
 
-            for (std::size_t i = 0; i < i_max; i += ChunkSize)
+            if constexpr (Policy == ExecutionPolicy::SIMD)
             {
-                auto&& local_vectors{LocalView::CreateMultiple(access_definitions, it, std::make_index_sequence<ChunkSize>{})};
-
-                for (std::size_t ii = 0; ii < ChunkSize; ++ii, ++it)
+                constexpr std::size_t ChunkSize = 8;
+                
+                for (std::size_t i = 0; i < num_entities; i += ChunkSize)
                 {
-                    loop_body(*it, local_vectors[ii]);
+                    const std::size_t ii_max = std::min(num_entities - i, ChunkSize);
+                    auto&& entity{GetEntities(it, ii_max, std::make_index_sequence<ChunkSize>{})};
+                    auto&& local_vectors = std::make_pair(LocalView::CreateMultiple(access_definitions, it, ii_max, std::make_index_sequence<ChunkSize>{}), ii_max);
+                    
+                    loop_body(entity, local_vectors);
+                    it += ChunkSize;
                 }
             }
-
-            for (std::size_t i = i_max; i < entities.GetRangeSize(); ++i, ++it)
+            else
             {
-                auto&& localVector{LocalView::Create(access_definitions, *it)};
+                for (std::size_t i = 0; i < num_entities; ++i, ++it)
+                {
+                    auto&& localVector{LocalView::Create(access_definitions, *it)};
 
-                loop_body(*it, localVector);
+                    loop_body(*it, localVector);
+                }
             }
         }
     };
@@ -97,12 +114,13 @@ namespace HPM::internal
     //!
     //! \tparam
     //! SubDimension specifies the dimension of requested sub-entities to iterate over
-    template <std::size_t Dimension_, std::size_t SubDimension>
+    template <std::size_t Dimension_, std::size_t SubDimension, ExecutionPolicy Policy_>
     struct ForEachIncidence
     {
-
         //! Is used to infer the dimension of entities in operator() by the run time system.
         static constexpr std::size_t Dimension = Dimension_;
+
+        static constexpr ExecutionPolicy Policy = Policy_;
 
         //! \brief Iterates over all given `entities` and its sub-entities of a given SubDimension and invokes `loop_body` for each sub-entity.
         //!
@@ -149,7 +167,7 @@ namespace HPM::internal
             for (auto const& entity : std::forward<EntityRange>(entities))
             {
                 auto it = entity.GetTopology().template GetEntities<SubDimension>().begin();
-                auto&& local_vectors{LocalView::CreateMultiple(access_definitions, it, std::make_index_sequence<NumSubEntities>{})};
+                auto&& local_vectors{LocalView::CreateMultiple(access_definitions, it, NumSubEntities, std::make_index_sequence<NumSubEntities>{})};
 
                 for (std::size_t i = 0; i < NumSubEntities; ++i, ++it)
                 {
