@@ -10,6 +10,7 @@
 
 #include <HighPerMeshes/dsl/data_access/LocalView.hpp>
 #include <HighPerMeshes/dsl/loop_types/loop_implementations/DefaultLoopImplementations.hpp>
+#include <HighPerMeshes/dsl/loop_types/ExecutionPolicy.hpp>
 #include <HighPerMeshes/dsl/meshes/Range.hpp>
 
 namespace HPM
@@ -63,10 +64,16 @@ namespace HPM
     //!
     //! \see
     //! HPM::MeshLoop
+    template <ExecutionPolicy Policy, std::size_t Dimension, typename MeshT, typename LoopBody, typename... AccessDefinition>
+    [[nodiscard]] auto ForEachEntity(const mesh::Range<Dimension, MeshT>& entity_range, std::tuple<AccessDefinition...> access_definitions, LoopBody f)
+    {
+        return MeshLoop{entity_range, access_definitions, ::HPM::internal::ForEachEntity<Dimension, Policy>{}, [f](const auto& entity, const auto& iter, auto& localVectors) { f(entity, iter, localVectors); }};
+    }
+
     template <std::size_t Dimension, typename MeshT, typename LoopBody, typename... AccessDefinition>
     [[nodiscard]] auto ForEachEntity(const mesh::Range<Dimension, MeshT>& entity_range, std::tuple<AccessDefinition...> access_definitions, LoopBody f)
     {
-        return MeshLoop{entity_range, access_definitions, ::HPM::internal::ForEachEntity<Dimension>{}, [f](const auto& entity, const auto& iter, auto& localVectors) { f(entity, iter, localVectors); }};
+        return ForEachEntity<ExecutionPolicy::Scalar>(entity_range, access_definitions, f);
     }
 
     //! ForEachincidence generates a MeshLoop that is intended to iterate over all entities of a given dimension
@@ -74,16 +81,21 @@ namespace HPM
     //!
     //! \see
     //! HPM::MeshLoop
-    template <std::size_t SubDimension, std::size_t Dimension, typename MeshT, typename LoopBody, typename... AccessDefinition>
+    template <ExecutionPolicy Policy, std::size_t SubDimension, std::size_t Dimension, typename MeshT, typename LoopBody, typename... AccessDefinition>
     [[nodiscard]] auto ForEachIncidence(const mesh::Range<Dimension, MeshT>& entity_range, std::tuple<AccessDefinition...> access_definitions, LoopBody f)
     {
-        return MeshLoop{entity_range, access_definitions, ::HPM::internal::ForEachIncidence<Dimension, SubDimension>{},
+        return MeshLoop{entity_range, access_definitions, ::HPM::internal::ForEachIncidence<Dimension, SubDimension, Policy>{},
             [f](const auto& face, const auto& iter, auto& localVectors) {
                 const auto& entity = face.GetTopology().GetContainingCell();
                 f(entity, face, iter, localVectors);
             }
-
         };
+    }
+
+    template <std::size_t SubDimension, std::size_t Dimension, typename MeshT, typename LoopBody, typename... AccessDefinition>
+    [[nodiscard]] auto ForEachIncidence(const mesh::Range<Dimension, MeshT>& entity_range, std::tuple<AccessDefinition...> access_definitions, LoopBody f)
+    {
+        return ForEachIncidence<ExecutionPolicy::Scalar, SubDimension>(entity_range, access_definitions, f);
     }
 } // namespace HPM
 
