@@ -212,10 +212,10 @@ namespace HPM::internal
         }
 
         template <typename AccessDefinitions, typename EntityIterator, std::size_t ...I>
-        static auto CreateMultiple(const AccessDefinitions& access_definitions, const EntityIterator& it, std::index_sequence<I...>)
+        static auto CreateMultiple(const AccessDefinitions& access_definitions, const EntityIterator& it, const std::size_t i_max, std::index_sequence<I...>)
             -> std::array<decltype(Create(access_definitions, it[0])), sizeof...(I)>
         {
-            return {Create(access_definitions, it[I])...};
+            return {Create(access_definitions, it[std::min(I, i_max)])...};
         }
 
         //!
