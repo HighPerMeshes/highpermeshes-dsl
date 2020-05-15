@@ -31,7 +31,7 @@ namespace HPM::internal
     //! \tparam
     //! Dimension_ specifies the dimension of requested entities to iterate over
     //!
-    template <std::size_t Dimension_, ExecutionPolicy Policy_>
+    template <std::size_t Dimension_, ExecutionPolicy Policy_ = ExecutionPolicy::Scalar>
     struct ForEachEntity
     {
         template <typename IteratorT, std::size_t...I>
@@ -114,7 +114,7 @@ namespace HPM::internal
     //!
     //! \tparam
     //! SubDimension specifies the dimension of requested sub-entities to iterate over
-    template <std::size_t Dimension_, std::size_t SubDimension, ExecutionPolicy Policy_>
+    template <std::size_t Dimension_, std::size_t SubDimension, ExecutionPolicy Policy_ = ExecutionPolicy::Scalar>
     struct ForEachIncidence
     {
         //! Is used to infer the dimension of entities in operator() by the run time system.
