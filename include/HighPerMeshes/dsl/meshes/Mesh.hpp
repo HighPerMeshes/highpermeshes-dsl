@@ -45,11 +45,11 @@ namespace HPM::mesh
     {
         static_assert(::HPM::dataType::internal::ProvidesMetaData<CoordinateT>::value, "error: ScalarT and Dimension meta data is required");
 
-        protected:
+      protected:
         // Indicator for mesh entity type 'cell' with invalid index.
         using NullT = void;
 
-        public:
+      public:
         // Template arguments.
         static constexpr std::size_t CellDimension = CellDimension_;
 
@@ -65,7 +65,7 @@ namespace HPM::mesh
 
         static constexpr std::size_t InvalidIndex = std::numeric_limits<std::size_t>::max();
 
-        protected:
+      protected:
         // Deduced types and constants.
         template <std::size_t Dimension>
         using EntityRange = ::HPM::iterator::EntityRange<EntityT<Dimension>, Mesh>;
@@ -138,17 +138,17 @@ namespace HPM::mesh
             }
         };
 
-        static constexpr std::size_t NumNodesPerCell = NumNodesOfEntity::template WithDimension<CellDimension>();
-        static constexpr std::size_t NumFacesPerCell = NumSubEntitiesOfCell::template WithDimension<CellDimension - 1>();
-        static constexpr std::size_t NumNodesPerFace = NumNodesOfEntity::template WithDimension<CellDimension - 1>();
-
         // Friend declarations: needed for member access.
         template <template <typename, typename, std::size_t, typename> typename, typename, typename, std::size_t, typename>
         friend class ::HPM::entity::EntityTopology;
         template <typename, typename, typename, std::size_t>
         friend class ::HPM::entity::EntityGeometry;
 
-        public:
+      public:
+        static constexpr std::size_t NumNodesPerCell = NumNodesOfEntity::template WithDimension<CellDimension>();
+        static constexpr std::size_t NumFacesPerCell = NumSubEntitiesOfCell::template WithDimension<CellDimension - 1>();
+        static constexpr std::size_t NumNodesPerFace = NumNodesOfEntity::template WithDimension<CellDimension - 1>();
+
         //!
         //! \brief Constructor.
         //!
@@ -352,7 +352,7 @@ namespace HPM::mesh
             return GetEntityRange<Dimension>([](const auto&) { return true; }, begin, end);
         }
 
-        protected:
+      protected:
         //!
         //! \brief Accessor data structure.
         //!
