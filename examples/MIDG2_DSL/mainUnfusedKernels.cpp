@@ -22,7 +22,8 @@
 #include "data3dN03.hpp" 					                  //!< application-dependent discontinuous Galerkin's cubic order node information
 #include "RKCoeff.hpp" 						                  //!< application-dependent Runge-Kutta coefficients
 
-using namespace HPM;
+using namespace ::HPM;
+using namespace ::HPM::dataType;
 
 template <typename T>
 class DEBUG;
@@ -33,8 +34,6 @@ int main(int, char**)
 
     using CoordinateType = HPM::dataType::Coord3D;
     using RealType = HPM::dataType::Real;
-    using Vec3D = HPM::dataType::Vec3D;
-    using Mat3D = HPM::dataType::Mat3D;
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     //                         Reading Configuration, DG and Mesh Files                                     //
@@ -73,18 +72,20 @@ int main(int, char**)
 
     body.Execute(
         HPM::ForEachEntity(
-        AllCells, 
-        std::tuple(Write(Cell(fieldE))),
-        [&] (const auto& cell, auto &&, auto lvs)
-        {
-            const auto& nodes = cell.GetTopology().GetNodes();
+            AllCells, 
+            std::tuple(Write(Cell(fieldE))),
+            [&] (const auto& cell, auto&&, auto& lvs)
+            {
+                const auto& nodes = cell.GetTopology().GetNodes();
 
-            HPM::ForEach(DG::numVolNodes, [&](const auto n) {  
-                auto& fieldE = dof::GetDofs<dof::Name::Cell>(std::get<0>(lvs));
-                const auto& nodeCoords = DG::LocalToGlobal(DG::referenceCoords[n], nodes);
-                fieldE[n].y = sin(M_PI * nodeCoords.x) * sin(M_PI * nodeCoords.z); 	//!< initial conditions for y component of electric field
-            });
-        })
+                HPM::ForEach(DG::numVolNodes, [&](const auto n) 
+                {  
+                    const auto& nodeCoords = DG::LocalToGlobal(DG::referenceCoords[n], nodes);
+                    auto& fieldE = dof::GetDofs<dof::Name::Cell>(std::get<0>(lvs));
+
+                    fieldE[n].y = std::sin(M_PI * nodeCoords.x) * std::sin(M_PI * nodeCoords.z); 	//!< initial conditions for y component of electric field
+                });
+            })
     );
 
     /** \brief create storage for intermediate fields*/
@@ -106,13 +107,14 @@ int main(int, char**)
     HPM::ForEachEntity(
         AllCells, 
         [&] (const auto& cell)
-            {
-                const RealType face_normal_scaling_factor = 2.0 / cell.GetGeometry().GetAbsJacobianDeterminant();
+        {
+            const RealType face_normal_scaling_factor = 2.0 / cell.GetGeometry().GetAbsJacobianDeterminant();
 
-                HPM::ForEachSubEntity(cell, [&](const auto& face){
-                    timeStep = std::min(timeStep, 1.0 / (face.GetGeometry().GetNormal() * face_normal_scaling_factor).Norm());
-                }); 
-            });
+            HPM::ForEachSubEntity(cell, [&](const auto& face)
+            {
+                timeStep = std::min(timeStep, 1.0 / (face.GetGeometry().GetNormal() * face_normal_scaling_factor).Norm());
+            }); 
+        });
 
     timeStep = finalTime / floor(finalTime * (order + 1) * (order + 1)/(.5 * timeStep) );
     std::cout << "time step: " << timeStep << std::endl;
@@ -121,6 +123,19 @@ int main(int, char**)
         auto t1 = std::chrono::high_resolution_clock::now();
 
         /** \brief Maxwell's surface kernel */
+        Vec<Matrix<RealType, DG::numVolNodes, DG::NumSurfaceNodes>, Mesh::NumFacesPerCell> lift;
+        
+        for (std::size_t face_index = 0; face_index < Mesh::NumFacesPerCell; ++face_index)
+        {
+            for (std::size_t m = 0; m < DG::NumSurfaceNodes; ++m)
+            {
+                for (std::size_t n = 0; n < DG::numVolNodes; ++n)
+                {
+                    lift[face_index][n][m] = DG::LIFT[face_index][m][n];
+                }
+            }
+        }
+
         auto surfaceKernelLoop = HPM::ForEachIncidence<2>(
             AllCells,
             std::tuple(
@@ -131,7 +146,8 @@ int main(int, char**)
                 Write(ContainingMeshElement(rhsH)),
                 Write(ContainingMeshElement(rhsE))),
             [&](const auto &element, const auto &face, const auto&, auto &lvs) {
-                /* ORIGINAL CODE
+                /* ORIGINAL CODE */
+                /*
                 const std::size_t face_index = face.GetTopology().GetLocalIndex();
                 const RealType face_normal_scaling_factor = 2.0 / element.GetGeometry().GetAbsJacobianDeterminant();
 
@@ -174,10 +190,7 @@ int main(int, char**)
                 auto &NeighboringFieldE = dof::GetDofs<dof::Name::Cell>(std::get<3>(lvs));
                 auto &rhsH = dof::GetDofs<dof::Name::Cell>(std::get<4>(lvs));
                 auto &rhsE = dof::GetDofs<dof::Name::Cell>(std::get<5>(lvs));
-
-                ::HPM::dataType::Real flux_H[3][DG::NumSurfaceNodes], flux_E[3][DG::NumSurfaceNodes];
-                ::HPM::dataType::Real dH[3][DG::NumSurfaceNodes], dE[3][DG::NumSurfaceNodes];
-                ::HPM::dataType::Real lift[DG::numVolNodes][DG::NumSurfaceNodes];
+                Matrix<RealType, 3, DG::NumSurfaceNodes> dE, dH, flux_E, flux_H;
 
                 for (std::size_t m = 0; m < DG::NumSurfaceNodes; ++m)
                 {
@@ -189,12 +202,7 @@ int main(int, char**)
                     dH[2][m] = tmp_1[2];
                     dE[0][m] = tmp_2[0];
                     dE[1][m] = tmp_2[1];
-                    dE[2][m] = tmp_2[2];
-
-                    for (std::size_t n = 0; n < DG::numVolNodes; ++n)
-                    {
-                        lift[n][m] = DG::LIFT[face_index][m][n];
-                    }
+                    dE[2][m] = tmp_2[2];   
                 }
 
                 #pragma omp simd
@@ -214,21 +222,22 @@ int main(int, char**)
                 #pragma omp simd
                 for (std::size_t n = 0; n < DG::numVolNodes; ++n)
                 {
-                    ::HPM::dataType::Real rhsH_0 = rhsH[n][0], rhsH_1 = rhsH[n][1], rhsH_2 = rhsH[n][2];
-                    ::HPM::dataType::Real rhsE_0 = rhsE[n][0], rhsE_1 = rhsE[n][1], rhsE_2 = rhsE[n][2];
+                    RealType rhsH_0 = rhsH[n][0], rhsH_1 = rhsH[n][1], rhsH_2 = rhsH[n][2];
+                    RealType rhsE_0 = rhsE[n][0], rhsE_1 = rhsE[n][1], rhsE_2 = rhsE[n][2];
                     
                     for (std::size_t m = 0; m < DG::NumSurfaceNodes; ++m)
                     {
-                        rhsH_0 += lift[n][m] * flux_H[0][m];
-                        rhsH_1 += lift[n][m] * flux_H[1][m];
-                        rhsH_2 += lift[n][m] * flux_H[2][m];
-                        rhsE_0 += lift[n][m] * flux_E[0][m];
-                        rhsE_1 += lift[n][m] * flux_E[1][m];
-                        rhsE_2 += lift[n][m] * flux_E[2][m];
+                        
+                        rhsH_0 += lift[face_index][n][m] * flux_H[0][m];
+                        rhsH_1 += lift[face_index][n][m] * flux_H[1][m];
+                        rhsH_2 += lift[face_index][n][m] * flux_H[2][m];
+                        rhsE_0 += lift[face_index][n][m] * flux_E[0][m];
+                        rhsE_1 += lift[face_index][n][m] * flux_E[1][m];
+                        rhsE_2 += lift[face_index][n][m] * flux_E[2][m];
                     }
 
-                    rhsH[n] = ::HPM::dataType::Vec<::HPM::dataType::Real, 3>(rhsH_0, rhsH_1, rhsH_2);
-                    rhsE[n] = ::HPM::dataType::Vec<::HPM::dataType::Real, 3>(rhsE_0, rhsE_1, rhsE_2);
+                    rhsH[n] = Vec3D(rhsH_0, rhsH_1, rhsH_2);
+                    rhsE[n] = Vec3D(rhsE_0, rhsE_1, rhsE_2);
                 }
             });
 
@@ -251,10 +260,10 @@ int main(int, char**)
                 const std::size_t num_cells = lvs.second;
 
 #if defined(SIMD_SOA)
-                ::HPM::dataType::Real D[3][3][num_cells];
-                ::HPM::dataType::Real derivative_E[3][3][num_cells], derivative_H[3][3][num_cells]; //!< derivative of fields w.r.t reference coordinates
-                ::HPM::dataType::Real f_e[DG::numVolNodes][3][num_cells], f_h[DG::numVolNodes][3][num_cells];
-                ::HPM::dataType::Real rhs_e[DG::numVolNodes][3][num_cells], rhs_h[DG::numVolNodes][3][num_cells];
+                RealType D[3][3][num_cells];
+                RealType derivative_E[3][3][num_cells], derivative_H[3][3][num_cells]; //!< derivative of fields w.r.t reference coordinates
+                RealType f_e[DG::numVolNodes][3][num_cells], f_h[DG::numVolNodes][3][num_cells];
+                RealType rhs_e[DG::numVolNodes][3][num_cells], rhs_h[DG::numVolNodes][3][num_cells];
 
                 for (std::size_t id = 0; id < num_cells; ++id)
                 {
@@ -340,12 +349,15 @@ int main(int, char**)
 
                     for (std::size_t n = 0; n < DG::numVolNodes; ++n)
                     {
-                        rhsH[n] -= ::HPM::dataType::Vec<::HPM::dataType::Real, 3>(rhs_h[n][0][id], rhs_h[n][1][id], rhs_h[n][2][id]);
-                        rhsE[n] += ::HPM::dataType::Vec<::HPM::dataType::Real, 3>(rhs_e[n][0][id], rhs_e[n][1][id], rhs_e[n][2][id]);
+                        rhsH[n] -= Vec3D(rhs_h[n][0][id], rhs_h[n][1][id], rhs_h[n][2][id]);
+                        rhsE[n] += Vec3D(rhs_e[n][0][id], rhs_e[n][1][id], rhs_e[n][2][id]);
                     }
                 }
 #else // SIMD_SOA
-                ::HPM::dataType::Real D[num_cells][3][3];
+                Mat3D D[num_cells];
+                Mat3D derivative_E[num_cells], derivative_H[num_cells]; //!< derivative of fields w.r.t reference coordinates
+                Matrix<RealType, DG::numVolNodes, 3> f_e[num_cells], f_h[num_cells], rhs_e[num_cells], rhs_h[num_cells];
+
                 for (std::size_t id = 0; id < num_cells; ++id)
                 {
                     const auto& d = cell[id].GetGeometry().GetInverseJacobian() * 2.0;
@@ -358,10 +370,6 @@ int main(int, char**)
                         }
                     }
                 }
-
-                ::HPM::dataType::Real derivative_E[num_cells][3][3], derivative_H[num_cells][3][3]; //!< derivative of fields w.r.t reference coordinates
-                ::HPM::dataType::Real f_e[num_cells][DG::numVolNodes][3], f_h[num_cells][DG::numVolNodes][3];
-                ::HPM::dataType::Real rhs_e[num_cells][DG::numVolNodes][3], rhs_h[num_cells][DG::numVolNodes][3];
 
                 for (std::size_t id = 0; id < num_cells; ++id)
                 {
@@ -425,15 +433,15 @@ int main(int, char**)
 
                     for (std::size_t n = 0; n < DG::numVolNodes; ++n)
                     {
-                        rhsH[n] -= ::HPM::dataType::Vec<::HPM::dataType::Real, 3>(rhs_h[id][n][0], rhs_h[id][n][1], rhs_h[id][n][2]);
-                        rhsE[n] += ::HPM::dataType::Vec<::HPM::dataType::Real, 3>(rhs_e[id][n][0], rhs_e[id][n][1], rhs_e[id][n][2]);
+                        rhsH[n] -= Vec3D(rhs_h[id][n][0], rhs_h[id][n][1], rhs_h[id][n][2]);
+                        rhsE[n] += Vec3D(rhs_e[id][n][0], rhs_e[id][n][1], rhs_e[id][n][2]);
                     }
                 }
 #endif
             });
 #else // SIMD_EXECUTION_POLICY
         /** \brief Maxwell's volume kernel */
-        ::HPM::dataType::Real dg_derivative[3][DG::numVolNodes][DG::numVolNodes];
+        RealType dg_derivative[3][DG::numVolNodes][DG::numVolNodes];
 
         for (std::size_t i = 0; i < 3; ++i)
         {
@@ -453,14 +461,16 @@ int main(int, char**)
                 Read(Cell(fieldE)),
                 Cell(rhsH),
                 Cell(rhsE)),
-            [&](const auto &element, const auto&, auto &lvs) {
+            [&](const auto &element, auto&&, auto &lvs) 
+            {
                 const Mat3D &D = element.GetGeometry().GetInverseJacobian() * 2.0;
                 const auto &fieldH = dof::GetDofs<dof::Name::Cell>(std::get<0>(lvs));
                 const auto &fieldE = dof::GetDofs<dof::Name::Cell>(std::get<1>(lvs));
                 auto &rhsH = dof::GetDofs<dof::Name::Cell>(std::get<2>(lvs));
                 auto &rhsE = dof::GetDofs<dof::Name::Cell>(std::get<3>(lvs));
 
-                /* ORIGINAL CODE
+                /* ORIGINAL CODE */
+                /*
                 HPM::ForEach(DG::numVolNodes, [&](const auto n) {
                     Mat3D derivative_E, derivative_H; //!< derivative of fields w.r.t reference coordinates
 
@@ -474,7 +484,7 @@ int main(int, char**)
                 });
                 */
                 
-                ::HPM::dataType::Real derivative_E[3][DG::numVolNodes], derivative_H[3][DG::numVolNodes];
+                Matrix<RealType, 3, DG::numVolNodes> derivative_E, derivative_H;
 
                 for (std::size_t i = 0; i < 3; ++i)
                 {
@@ -504,12 +514,12 @@ int main(int, char**)
                     #pragma omp simd
                     for (std::size_t n = 0; n < DG::numVolNodes; ++n)
                     {
-                        rhsE[n] += ::HPM::dataType::Vec<::HPM::dataType::Real, 3>(
+                        rhsE[n] += Vec3D(
                             D[i][1] * derivative_E[2][n] - D[i][2] * derivative_E[1][n],
                             D[i][2] * derivative_E[0][n] - D[i][0] * derivative_E[2][n],
                             D[i][0] * derivative_E[1][n] - D[i][1] * derivative_E[0][n]);
 
-                        rhsH[n] -= ::HPM::dataType::Vec<::HPM::dataType::Real, 3>(
+                        rhsH[n] -= Vec3D(
                             D[i][1] * derivative_H[2][n] - D[i][2] * derivative_H[1][n],
                             D[i][2] * derivative_H[0][n] - D[i][0] * derivative_H[2][n],
                             D[i][0] * derivative_H[1][n] - D[i][1] * derivative_H[0][n]);
@@ -524,34 +534,33 @@ int main(int, char**)
         t1 = std::chrono::high_resolution_clock::now();
 
         /** \brief Runge-Kutta integrtion kernel */
-        auto rungeKuttaLoop =
-            HPM::ForEachEntity(
-                AllCells,
-                std::tuple(
-                    Write(Cell(fieldH)),
-                    Write(Cell(fieldE)),
-                    Cell(rhsH),
-                    Cell(rhsE),
-                    Cell(resH),
-                    Cell(resE)),
-                [&](const auto &, const auto &iter, auto &lvs) {
-                    const auto &RKstage = RungeKuttaCoeff<RealType>::rk4[iter % 5];
-                    auto &fieldH = dof::GetDofs<dof::Name::Cell>(std::get<0>(lvs));
-                    auto &fieldE = dof::GetDofs<dof::Name::Cell>(std::get<1>(lvs));
-                    auto &rhsH = dof::GetDofs<dof::Name::Cell>(std::get<2>(lvs));
-                    auto &rhsE = dof::GetDofs<dof::Name::Cell>(std::get<3>(lvs));
-                    auto &resH = dof::GetDofs<dof::Name::Cell>(std::get<4>(lvs));
-                    auto &resE = dof::GetDofs<dof::Name::Cell>(std::get<5>(lvs));
+        auto rungeKuttaLoop = HPM::ForEachEntity(
+            AllCells,
+            std::tuple(
+                Write(Cell(fieldH)),
+                Write(Cell(fieldE)),
+                Cell(rhsH),
+                Cell(rhsE),
+                Cell(resH),
+                Cell(resE)),
+            [&](const auto &, const auto &iter, auto &lvs) {
+                const auto &RKstage = RungeKuttaCoeff<RealType>::rk4[iter % 5];
+                auto &fieldH = dof::GetDofs<dof::Name::Cell>(std::get<0>(lvs));
+                auto &fieldE = dof::GetDofs<dof::Name::Cell>(std::get<1>(lvs));
+                auto &rhsH = dof::GetDofs<dof::Name::Cell>(std::get<2>(lvs));
+                auto &rhsE = dof::GetDofs<dof::Name::Cell>(std::get<3>(lvs));
+                auto &resH = dof::GetDofs<dof::Name::Cell>(std::get<4>(lvs));
+                auto &resE = dof::GetDofs<dof::Name::Cell>(std::get<5>(lvs));
 
-                    HPM::ForEach(DG::numVolNodes, [&](const auto n) {
-                        resH[n] = RKstage[0] * resH[n] + timeStep * rhsH[n]; //!< residual fields
-                        resE[n] = RKstage[0] * resE[n] + timeStep * rhsE[n];
-                        fieldH[n] += RKstage[1] * resH[n]; //!< updated fields
-                        fieldE[n] += RKstage[1] * resE[n];
-                        rhsH[n] = 0.0; //TODO
-                        rhsE[n] = 0.0;
-                    });
+                HPM::ForEach(DG::numVolNodes, [&](const auto n) {
+                    resH[n] = RKstage[0] * resH[n] + timeStep * rhsH[n]; //!< residual fields
+                    resE[n] = RKstage[0] * resE[n] + timeStep * rhsE[n];
+                    fieldH[n] += RKstage[1] * resH[n]; //!< updated fields
+                    fieldE[n] += RKstage[1] * resE[n];
+                    rhsH[n] = 0.0; //TODO
+                    rhsE[n] = 0.0;
                 });
+            });
 
         body.Execute( HPM::iterator::Range<size_t> { static_cast<std::size_t>(((finalTime - startTime) / timeStep) * 5) },
                         surfaceKernelLoop, volumeKernelLoop, rungeKuttaLoop);
@@ -560,6 +569,7 @@ int main(int, char**)
         duration = t2 - t1;
         aggregate_time3 += duration.count();
     }
+
     std::cout << "Aggregate execution time for Surface kernel       = " << aggregate_time1 * 1000 << " ms" << std::endl;
     std::cout << "Aggregate execution time for Volume kernel        = " << aggregate_time2 * 1000 << " ms" << std::endl;
     std::cout << "Aggregate execution time for RK kernel            = " << aggregate_time3 * 1000 << " ms" << std::endl;
