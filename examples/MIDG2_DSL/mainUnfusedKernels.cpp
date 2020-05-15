@@ -15,8 +15,6 @@
 #include <numeric>
 #include <cstring>
 
-#include <omp.h>
-
 #include <HighPerMeshes.hpp>
 
 #include "data3dN03.hpp" 					                  //!< application-dependent discontinuous Galerkin's cubic order node information
