@@ -260,13 +260,9 @@ int main(int, char**)
             {
                 const auto& nodeCoords = DG::LocalToGlobal(DG::referenceCoords[n], element.GetTopology().GetNodes()); 		                         //!< reference to global nodal coordinates
                 const RealType exactEy = sin(M_PI * nodeCoords.x) * sin(M_PI * nodeCoords.z) * cos(sqrt(2.) * M_PI * finalTime); 	                            //!< exact analytical electrical field value in y direction
-                
-                #pragma omp critical
-                {
                 maxErrorEy = std::max(maxErrorEy, std::abs(exactEy - fieldE[n].y));   //!< maximum error in electrical field value in y direction
                 minEy = std::min(minEy, fieldE[n].y);                                 //!< minimum electric field value in y direction
-                maxEy = std::max(maxEy, fieldE[n].y);
-                }  
+                maxEy = std::max(maxEy, fieldE[n].y);  
             });
         })
     );
