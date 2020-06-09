@@ -12,6 +12,8 @@ add_executable(parser parser.cpp)
 
 target_include_directories(parser PRIVATE include)
 
+option(BUILD_TESTS "Build Tests?" off)
+
 if(BUILD_TESTS) 
   add_subdirectory(tests)
 endif()
