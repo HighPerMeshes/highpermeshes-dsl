@@ -147,8 +147,9 @@ namespace HPM::internal
             constexpr std::size_t NumSubEntities = EntityRange::EntityT::Topology::template GetNumEntities<SubDimension>();
 
             for (auto const& entity : std::forward<EntityRange>(entities))
-            {
-                auto it = entity.GetTopology().template GetEntities<SubDimension>().begin();
+            {   
+                const auto sub_entities { entity.GetTopology().template GetEntities<SubDimension>() }; 
+                auto it = sub_entities.begin();
                 auto&& local_vectors{LocalView::CreateMultiple(access_definitions, it, std::make_index_sequence<NumSubEntities>{})};
 
                 for (std::size_t i = 0; i < NumSubEntities; ++i, ++it)

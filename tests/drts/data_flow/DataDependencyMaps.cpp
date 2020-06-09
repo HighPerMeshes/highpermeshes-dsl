@@ -34,7 +34,7 @@ struct MockPartitionedMesh
     static constexpr std::array<size_t, 4> L2s{0, 1, 2, 3};
 
     std::map<size_t, std::map<size_t, size_t>> dim2entity2local;
-    std::map<size_t, std::map<size_t, std::set<size_t>>> dim2local2entities;
+    std::map<size_t, std::map<size_t, std::vector<size_t>>> dim2local2entities;
 
     auto GetNumL1Partitions() const { return 2; };
 
@@ -50,7 +50,7 @@ struct MockPartitionedMesh
                 auto entityIndex = entity.GetTopology().GetIndex();
                 auto L2Index = entityIndex * L2s.size() / cube.mesh.template GetNumEntities<constant.value>();
                 dim2entity2local[constant.value][entityIndex] = L2Index;
-                dim2local2entities[constant.value][L2Index].insert(entityIndex);
+                dim2local2entities[constant.value][L2Index].emplace_back(entityIndex);
             }
         });
     }

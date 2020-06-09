@@ -31,6 +31,13 @@
 
 namespace HPM::drts::data_flow
 {
+    template<typename T>
+    void uniquify (std::vector<T>& vector) {
+        std::sort(vector.begin(), vector.end());
+        auto last = std::unique(vector.begin(), vector.end());
+        vector.erase(last, vector.end());
+    }
+
     //!
     //! \brief This class specifies the dependencies between two local (L2) partitions given an access pattern and a loop implementation.
     //!
@@ -39,13 +46,6 @@ namespace HPM::drts::data_flow
     template <std::size_t Dimension>
     class DataDependencyMap
     {
-        //! Specifies an entity by its index and codimension.
-        struct EntitySpecification
-        {
-            const std::size_t index;
-            const std::size_t codimension;
-        };
-
         public:
         //!
         //! \param pattern An access pattern
@@ -64,10 +64,10 @@ namespace HPM::drts::data_flow
                 const std::size_t other_L2 = mesh.EntityToL2P(considered_element);
                 const std::size_t other_index = considered_element.GetTopology().GetIndex();
 
-                has_access[L2].insert(other_L2);
-                has_access_by_entity[{L2, other_L2}][RequiredCodimension].insert(other_index);
+                has_access[L2].emplace_back(other_L2);
+                has_access_by_entity[{L2, other_L2}][RequiredCodimension].emplace_back(other_index);
             };
-
+            
             const std::size_t num_l1_partitions = mesh.GetNumL1Partitions();
             for (std::size_t i_L1 = 0; i_L1 < num_l1_partitions; ++i_L1)
             {
@@ -77,6 +77,20 @@ namespace HPM::drts::data_flow
                     loop(elements, [&](const auto& entity) { detectL2Accesses(entity, L2); });
                 }
             }
+
+            for (auto& [_, vector] : has_access)
+            {
+                uniquify(vector);
+            }
+
+            for (auto& [_, array] : has_access_by_entity)
+            {
+                for (std::size_t dim = 0; dim < array.size(); ++dim)
+                {
+                    uniquify(array[dim]);
+                }
+            }
+
         }
 
         //!
@@ -86,7 +100,7 @@ namespace HPM::drts::data_flow
         {
             auto iter = has_access.find(accessor_L2);
 
-            return (iter != has_access.end() ? iter->second : empty_access);
+            return iter != has_access.end() ? iter->second : empty_access;
         }
 
         //!
@@ -102,27 +116,35 @@ namespace HPM::drts::data_flow
         //! Adds all indices for all relationships in other to this.
         void operator+=(const DataDependencyMap<Dimension>&& other)
         {
-            auto move_insert = [](auto&& dst, auto&& src) { dst.insert(make_move_iterator(src.begin()), make_move_iterator(src.end())); };
+            auto move_insert = [](auto&& dst, auto&& src) { 
+                dst.insert(dst.end(), make_move_iterator(src.begin()), make_move_iterator(src.end())); 
+            };
 
-            for (auto [key, value] : other.has_access)
+            for (auto& [key, value] : other.has_access)
             {
-                move_insert(has_access[key], value);
+                auto& this_access = has_access[key]; 
+                move_insert(this_access, value);
+                uniquify(this_access);
             }
 
-            for (auto [key, value] : other.has_access_by_entity)
+            for (auto& [key, value] : other.has_access_by_entity)
             {
                 for (std::size_t dim = 0; dim < value.size(); ++dim)
                 {
-                    move_insert(has_access_by_entity[key][dim], value[dim]);
+                    auto& this_access = has_access_by_entity[key][dim]; 
+                    move_insert(this_access, value[dim]);
+                    uniquify(this_access);
                 }
             }
+  
         }
 
         private:
-        const std::set<std::size_t> empty_access;
-        std::map<std::size_t, std::set<std::size_t>> has_access;
-        const std::array<std::set<std::size_t>, Dimension + 1> empty_access_by_entity;
-        std::map<std::pair<std::size_t, std::size_t>, std::array<std::set<std::size_t>, Dimension + 1>> has_access_by_entity;
+        const std::vector<std::size_t> empty_access;
+        std::map<std::size_t, std::vector<std::size_t>> has_access;
+
+        const std::array<std::vector<std::size_t>, Dimension + 1> empty_access_by_entity;
+        std::map<std::pair<std::size_t, std::size_t>, std::array<std::vector<std::size_t>, Dimension + 1>> has_access_by_entity;
     };
 } // namespace HPM::drts::data_flow
 
