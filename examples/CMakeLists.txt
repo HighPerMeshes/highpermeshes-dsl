@@ -13,5 +13,9 @@ add_executable(experiments Experiments.cpp)
 target_link_libraries (experiments LINK_PRIVATE HighPerMeshes::HighPerMeshes OpenMP::OpenMP_CXX)
 target_include_directories(experiments PRIVATE ../tests/util/)
 
+add_executable(writeLoopExample WriteLoopExample.cpp)
+target_link_libraries (writeLoopExample LINK_PRIVATE HighPerMeshes::HighPerMeshes OpenMP::OpenMP_CXX)
+target_include_directories(writeLoopExample PRIVATE ../tests/util/ ../utility/output)
+
 configure_file(./MIDG2_DSL/config.cfg config.cfg COPYONLY)
 configure_file(./MIDG2_DSL/F072.neu F072.neu COPYONLY)
