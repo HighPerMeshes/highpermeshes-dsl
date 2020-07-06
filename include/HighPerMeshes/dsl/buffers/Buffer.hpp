@@ -13,6 +13,7 @@
 
 #include <HighPerMeshes/common/Iterator.hpp>
 #include <HighPerMeshes/dsl/buffers/BufferBase.hpp>
+#include <HighPerMeshes/dsl/data_access/DofPartition.hpp>
 
 namespace HPM
 {
@@ -73,24 +74,41 @@ namespace HPM
         auto GetRange(const std::set<std::size_t>& indices) const { return ::HPM::iterator::RandomAccessRange{data, indices}; }
         //! \}
 
+        const auto& GetDofs() const { return Base::GetDofs(); }
+
         //! \return Start position and size of the dofs partition in `data` for a given `dimension`.
-        auto GetDofPartition(const std::size_t dimension) const -> std::pair<std::size_t, std::size_t>
+        auto GetDofs(const std::size_t dimension) const -> DofPartition<const std::vector<T, Allocator>>
+        {
+            return GetDofPartition(dimension);
+        }
+
+        //! \return Start position and size of the dofs partition in `data` for a given `entity`.
+        template <typename EntityT>
+        const auto GetDofs(const EntityT& entity) const
+        {
+            const auto& dof_partition = GetDofPartition(EntityT::Dimension);
+
+            return dof_partition.At(entity);
+        }
+
+        //! \return Start position and size of the dofs partition in `data` for a given `dimension`.
+        auto GetDofPartition(const std::size_t dimension) const -> DofPartition<const std::vector<T, Allocator>>
         {
             assert(dimension <= (MeshT::CellDimension + 1));
 
             // Global dofs.
             if (dimension == (MeshT::CellDimension + 1))
             {
-                return {offsets.at(dimension), dofs.At(dimension)};
+                return {data, offsets.at(dimension), dofs.At(dimension), dofs.At(dimension), dimension};
             }
             // Node dofs: these are the last ones in `data`.
             else if (dimension == 0)
             {
-                return {offsets.at(dimension), data.size() - offsets.at(dimension)};
+                return {data, offsets.at(dimension), data.size() - offsets.at(dimension), dofs.At(dimension), dimension};
             }
             else
             {
-                return {offsets.at(dimension), offsets.at(dimension - 1) - offsets.at(dimension)};
+                return {data, offsets.at(dimension), offsets.at(dimension - 1) - offsets.at(dimension), dofs.At(dimension), dimension};
             }
         }
 
@@ -108,7 +126,7 @@ namespace HPM
 
         auto end() const { return data.end(); }
 
-    protected:
+      protected:
         using Base::mesh;
         using Base::dofs;
         using Base::offsets;

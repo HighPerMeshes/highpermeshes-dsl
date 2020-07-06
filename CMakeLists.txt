@@ -7,8 +7,9 @@ list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/cmake)
 set (CMAKE_CXX_STANDARD 17)
 set (CMAKE_BUILD_TYPE Release)
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native -ftree-vectorize -ffast-math -Wall -Wextra -pedantic")
-set (BUILD_EXAMPLES on)
-set (BUILD_TESTS on)
+
+option (BUILD_EXAMPLES "Build examples?" on)
+option (BUILD_TESTS "Build tests?" on)
 
 # Create a library called "HighPerMeshes", also add an alias for the correct namespace
 add_library ( HighPerMeshes INTERFACE)
@@ -85,3 +86,7 @@ endif (BUILD_TESTS)
 if (BUILD_EXAMPLES)
 	add_subdirectory (examples)
 endif (BUILD_EXAMPLES)
+
+if(BUILD_BENCHMARKS)
+  add_subdirectory (benchmarks)
+endif(BUILD_BENCHMARKS)

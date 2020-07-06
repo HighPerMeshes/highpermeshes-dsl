@@ -14,6 +14,7 @@
 #include <HighPerMeshes/auxiliary/Convert.hpp>
 #include <HighPerMeshes/auxiliary/Environment.hpp>
 #include <HighPerMeshes/auxiliary/Math.hpp>
+#include <HighPerMeshes/auxiliary/MeasureTime.hpp>
 #include <HighPerMeshes/auxiliary/Reader.hpp>
 #include <HighPerMeshes/auxiliary/TupleOperations.hpp>
 
