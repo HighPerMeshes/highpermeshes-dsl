@@ -7,6 +7,8 @@
 #include <any>
 #include <list>
 
+#include <HighPerMeshes/dsl/dispatchers/OpenCLDispatcher.hpp>
+
 #define CL_HPP_ENABLE_EXCEPTIONS
 #define CL_HPP_TARGET_OPENCL_VERSION 200
 #include <CL/cl2.hpp>
@@ -17,9 +19,11 @@ namespace HPM
     class OpenCLHandler
     {
 
-        private:
+        public:
 
         typedef std::string kernel_name_type;
+
+        private:
 
         cl::Platform platform;
         std::vector<cl::Device> devices;
@@ -114,7 +118,7 @@ namespace HPM
         template <typename T>
         const SVMAllocator<T> & GetSVMAllocator()
         {
-           return std::any_cast<const SVMAllocator<T> &>(allocators.emplace_back(SVMAllocator<T>(context)));
+            return std::any_cast<const SVMAllocator<T> &>(allocators.emplace_back(SVMAllocator<T>(context)));
         }
        
         template <typename T>
@@ -145,10 +149,55 @@ namespace HPM
             default_queue.enqueueMapSVM((void*) buffer.GetData(), sizeof(T)*buffer.GetSize(), CL_TRUE, CL_MAP_READ | CL_MAP_WRITE);
         }
 
-        void EnqueueKernel(kernel_name_type kernelName)
+        void EnqueueKernel(kernel_name_type kernelName, size_t global_wi = 1)
         {
-            default_queue.enqueueNDRangeKernel(kernels.at(kernelName),cl::NullRange,cl::NDRange(1),cl::NDRange(1), NULL, NULL);
+            default_queue.enqueueNDRangeKernel(kernels.at(kernelName),cl::NullRange,cl::NDRange(global_wi),cl::NDRange(1), NULL, NULL);
         }
+
+
+    };
+
+
+    template<typename... KernelArg>
+    class OpenCLKernelEnqueuer
+    {
+
+        private:
+
+        using KernelArgs = std::tuple<KernelArg...>;
+
+        OpenCLHandler& ocl;
+        OpenCLHandler::kernel_name_type kernelName;
+        KernelArgs kernel_arguments;
+        size_t wi_global_size;
+
+        template <typename T, typename MeshT, typename DofT>
+        void Map(const Buffer<T, MeshT, DofT, OpenCLHandler::SVMAllocator<T>>& buffer)
+        {
+            ocl.MapSVMBuffer(buffer);
+        }
+
+        template <typename T, typename MeshT, typename DofT>
+        void Unmap(Buffer<T, MeshT, DofT, OpenCLHandler::SVMAllocator<T>> & buffer)
+        {
+            ocl.UnmapSVMBuffer(buffer);
+        }
+
+        template <typename NOP_T> void Map(NOP_T arg){}
+        template <typename NOP_T> void Unmap(NOP_T arg){}
+
+        public:
+
+        OpenCLKernelEnqueuer(OpenCLHandler& _ocl, OpenCLHandler::kernel_name_type _kernelName, KernelArgs _ka, size_t _wi_global_size = 1)
+            : ocl(_ocl), kernelName(_kernelName), kernel_arguments(_ka), wi_global_size(_wi_global_size) {};
+
+        void enqueue()
+        {
+            std::apply([this](auto&&... arg) { (Unmap(arg), ...); }, kernel_arguments); // eventually unmap the svm buffers
+            std::apply([this](auto&&... arg) { size_t arg_id(0); ((ocl.SetKernelArg(kernelName, arg_id++, arg)), ...); }, kernel_arguments);
+            ocl.EnqueueKernel(kernelName, wi_global_size);
+            std::apply([this](auto&&... arg) { (Map(arg), ...); }, kernel_arguments);  // eventually map the svm buffers
+        };
 
     };
 
