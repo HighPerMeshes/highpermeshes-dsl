@@ -102,7 +102,7 @@ namespace HPM
             cl::Program program(context, devices, bins, NULL, &prog_err);
             program.build();
 
-            // RATIONALE: in case a new binary is loaded the old kernels are erased 
+            // RATIONALE: in case a new binary/source is loaded the old kernels are erased 
             kernels.clear();
          
             for(std::string kname : kernelNames)
@@ -110,6 +110,32 @@ namespace HPM
 
         }
  
+        void LoadKernelsFromString(std::string source, std::vector<kernel_name_type> kernelNames)
+        {
+
+            std::vector<std::string> _s;
+            _s.push_back(source);
+            cl_int prog_err, krnl_err;
+
+            cl::Program program(context, _s, &prog_err);
+
+            try { program.build(devices); }
+                catch (cl::Error& e)
+                {
+                    std::cerr<<"Error in program build.\n"<<program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(devices[0])<<std::endl;
+                    _Exit(1);
+                }
+
+            // RATIONALE: in case a new binary/source is loaded the old kernels are erased
+            kernels.clear();
+
+            for(std::string kname : kernelNames)
+            {
+                kernels.emplace(kname, cl::Kernel(program, kname.c_str(), &krnl_err));
+                std::cerr<<kname<<" "<<krnl_err<<std::endl;
+            }
+        }
+
         const cl::Context& GetContext() const
         {
             return context;
