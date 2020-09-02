@@ -3,6 +3,16 @@
 
 using namespace HPM;
 
+std::string clsource{R"CLC(
+    __kernel void
+    __attribute__((task))
+    memcopy(__global int * restrict src, __global int * restrict dst, int size)
+    {
+      for(int i = 0; i < size; i++)
+        dst[i] = src[i];
+    }
+)CLC"};
+ 
 int main()
 {
     const auxiliary::ConfigParser CFG("config.cfg");
@@ -11,8 +21,8 @@ int main()
     const std::string oclDeviceName = CFG.GetValue<std::string>("oclDeviceName"); 
 
     OpenCLHandler _ocl(oclPlatformName, oclDeviceName);
-    _ocl.LoadKernelsFromBinary("memcopy.aocx", {"memcopy"});
-
+//    _ocl.LoadKernelsFromBinary("memcopy.aocx", {"memcopy"});
+    _ocl.LoadKernelsFromString(clsource, {"memcopy"});
 
     //The runtime determines the configuration of HighPerMeshes. 
     //The GetBuffer class determines that we use a normal buffer to allocate space 
@@ -66,9 +76,6 @@ int main()
     // In this case, we use a SequentialDispatcher to just execute the specified kernels
     SequentialDispatcher dispatcher;
 
-    _ocl.MapSVMBuffer(buffer_out);
-    _ocl.MapSVMBuffer(buffer_in);
-
     dispatcher.Execute(
         iterator::Range{1}, 
         ForEachEntity(
@@ -112,6 +119,8 @@ int main()
     );
 #endif
 
+    bool test_passed = true;
+
     dispatcher.Execute(
         iterator::Range{1}, 
         ForEachEntity(
@@ -123,11 +132,14 @@ int main()
 
                 const auto dof = 0;
 
-                if(bufferAccess_in[dof] != 43) std::cout<<bufferAccess_in[dof]<<' ';
+                if(bufferAccess_in[dof] != 43) {
+                    test_passed = false;
+                    std::cout<<bufferAccess_in[dof]<<' ';
+                }
 
             })
     );
 
-    std::cout<<std::endl;
+    std::cout<<(test_passed? "Test PASSED.": "Test FAILED." )<<std::endl;
 
 }
