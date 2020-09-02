@@ -18,7 +18,7 @@ target_link_libraries (writeLoopExample LINK_PRIVATE HighPerMeshes::HighPerMeshe
 target_include_directories(writeLoopExample PRIVATE ../tests/util/ ../utility/output)
 
 add_executable(openclMemCopyExample OpenCLMemCopyExample.cpp)
-target_link_libraries (openclMemCopyExample PRIVATE -lOpenCL)
+target_link_libraries (openclMemCopyExample PRIVATE -pthread -lOpenCL)
 target_link_libraries (openclMemCopyExample LINK_PRIVATE HighPerMeshes::HighPerMeshes)
 
 configure_file(./MIDG2_DSL/config.cfg config.cfg COPYONLY)
