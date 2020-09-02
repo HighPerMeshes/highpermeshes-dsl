@@ -178,7 +178,7 @@ namespace HPM
         template <typename T, typename MeshT, typename DofT>
         void MapSVMBuffer(const Buffer<T, MeshT, DofT, OpenCLHandler::SVMAllocator<T>>& buffer)
         {
-            default_queue.enqueueMapSVM((void*) buffer.GetData(), sizeof(T)*buffer.GetSize(), CL_TRUE, CL_MAP_READ | CL_MAP_WRITE);
+            default_queue.enqueueMapSVM((void*) buffer.GetData(), CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, sizeof(T)*buffer.GetSize());
         }
 
         void EnqueueKernel(kernel_name_type kernelName, size_t global_wi = 1)
