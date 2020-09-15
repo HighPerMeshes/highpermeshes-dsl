@@ -222,8 +222,8 @@ int main(int, char**)
                         resE[n] = RKstage[0] * resE[n] + timeStep * rhsE[n];
                         fieldH[n] += RKstage[1] * resH[n]; //!< updated fields
                         fieldE[n] += RKstage[1] * resE[n];
-                        rhsH[n] = 0.0; //TODO
-                        rhsE[n] = 0.0;
+                        assign_to_entries(rhsH[n], 0.0); //TODO
+                        assign_to_entries(rhsE[n], 0.0);
                     });
                 });
 
