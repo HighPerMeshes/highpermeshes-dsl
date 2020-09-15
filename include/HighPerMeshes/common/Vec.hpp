@@ -31,12 +31,12 @@ namespace HPM::dataType
         class VecBase
         {
             public:
-            VecBase() : data{} {}
+            constexpr VecBase() : data{} {}
 
-            VecBase(const std::array<T, N>& data) : data(data) {}
+            constexpr VecBase(const std::array<T, N>& data) : data(data) {}
 
             template <typename... Args, typename std::enable_if_t<(sizeof...(Args) == N && std::conjunction_v<std::is_convertible<Args, T>...>), int> = 0>
-            VecBase(Args&&... args) : data{static_cast<T>(std::forward<Args>(args))...}
+            constexpr VecBase(Args&&... args) : data{static_cast<T>(std::forward<Args>(args))...}
             {
             }
 
@@ -58,7 +58,7 @@ namespace HPM::dataType
             //! \param index array position
             //! \return a constant reference to the array element at position `index`
             //!
-            inline auto operator[](const int index) const -> const T& { return data[index]; }
+            inline auto operator[](const int index) const -> T { return data[index]; }
 
             std::array<T, N> data;
         };
@@ -75,18 +75,18 @@ namespace HPM::dataType
         class VecBase<T, 1>
         {
             public:
-            VecBase() : data{} {}
+            constexpr VecBase() : data{} {}
 
-            VecBase(const std::array<T, 1>& data) : data(data) {}
+            constexpr VecBase(const std::array<T, 1>& data) : data(data) {}
 
             template <typename X>
-            VecBase(X&& data) : data{data}
+            constexpr VecBase(X&& data) : data{data}
             {
             }
 
             inline auto operator[](const int index) -> T& { return data[index]; }
 
-            inline auto operator[](const int index) const -> const T& { return data[index]; }
+            inline auto operator[](const int index) const -> T { return data[index]; }
 
             // Access to the data either through 'data[0]' or 'x'
             union {
@@ -110,18 +110,18 @@ namespace HPM::dataType
         class VecBase<T, 2>
         {
             public:
-            VecBase() : data{} {}
+            constexpr VecBase() : data{} {}
 
-            VecBase(const std::array<T, 2>& data) : data(data) {}
+            constexpr VecBase(const std::array<T, 2>& data) : data(data) {}
 
             template <typename... Args, typename std::enable_if_t<(sizeof...(Args) == 2 && std::conjunction_v<std::is_convertible<Args, T>...>), int> = 0>
-            VecBase(Args&&... args) : data{static_cast<T>(std::forward<Args>(args))...}
+            constexpr VecBase(Args&&... args) : data{static_cast<T>(std::forward<Args>(args))...}
             {
             }
 
             inline auto operator[](const int index) -> T& { return data[index]; }
 
-            inline auto operator[](const int index) const -> const T& { return data[index]; }
+            inline auto operator[](const int index) const -> T { return data[index]; }
 
             // Access to the data either through 'data[0|1]' or 'x|y'
             union {
@@ -145,18 +145,18 @@ namespace HPM::dataType
         class VecBase<T, 3>
         {
             public:
-            VecBase() : data{} {}
+            constexpr VecBase() : data{} {}
 
-            VecBase(const std::array<T, 3>& data) : data(data) {}
+            constexpr VecBase(const std::array<T, 3>& data) : data(data) {}
 
             template <typename... Args, typename std::enable_if_t<(sizeof...(Args) == 3 && std::conjunction_v<std::is_convertible<Args, T>...>), int> = 0>
-            VecBase(Args&&... args) : data{static_cast<T>(std::forward<Args>(args))...}
+            constexpr VecBase(Args&&... args) : data{static_cast<T>(std::forward<Args>(args))...}
             {
             }
 
             inline auto operator[](const int index) -> T& { return data[index]; }
 
-            inline auto operator[](const int index) const -> const T& { return data[index]; }
+            inline auto operator[](const int index) const -> T { return data[index]; }
 
             // Access to the data either through 'data[0|1|2]' or 'x|y|z'
             union {
@@ -180,18 +180,18 @@ namespace HPM::dataType
         class VecBase<T, 4>
         {
             public:
-            VecBase() : data{} {}
+            constexpr VecBase() : data{} {}
 
-            VecBase(const std::array<T, 4>& data) : data(data) {}
+            constexpr VecBase(const std::array<T, 4>& data) : data(data) {}
 
             template <typename... Args, typename std::enable_if_t<(sizeof...(Args) == 4 && std::conjunction_v<std::is_convertible<Args, T>...>), int> = 0>
-            VecBase(Args&&... args) : data{static_cast<T>(std::forward<Args>(args))...}
+            constexpr VecBase(Args&&... args) : data{static_cast<T>(std::forward<Args>(args))...}
             {
             }
 
             inline auto operator[](const int index) -> T& { return data[index]; }
 
-            inline auto operator[](const int index) const -> const T& { return data[index]; }
+            inline auto operator[](const int index) const -> T { return data[index]; }
 
             // Access to the data either through 'data[0|1|2|3]' or 'x|y|z|w'
             union {
@@ -228,62 +228,19 @@ namespace HPM::dataType
         // Deduced types and constants.
         static constexpr std::size_t Dimension = N;
 
-        Vec() : Base() {}
+        constexpr Vec() : Base() {}
 
-        Vec(const Vec& other) : Base(other.data) {}
+        constexpr Vec(const Vec& other) : Base(other.data) {}
 
         template <typename... Args, typename std::enable_if_t<(sizeof...(Args) == N), int> = 0>
-        Vec(Args&&... args) : Base(std::forward<Args>(args)...)
+        constexpr Vec(Args&&... args) : Base(std::forward<Args>(args)...)
         {
         }
 
-        // Operator definitions.
-#define MACRO(OP)                                                                                                                                                                                                          \
-inline auto operator OP(const Vec& v)->Vec&                                                                                                                                                                            \
-{                                                                                                                                                                                                                      \
-    for (std::size_t i = 0; i < N; ++i)                                                                                                                                                                                \
-    {                                                                                                                                                                                                                  \
-        data[i] OP v.data[i];                                                                                                                                                                                          \
-    }                                                                                                                                                                                                                  \
-                                                                                                                                                                                                                        \
-    return *this;                                                                                                                                                                                                      \
-}                                                                                                                                                                                                                      \
-                                                                                                                                                                                                                        \
-inline auto operator OP(const T s)->Vec&                                                                                                                                                                               \
-{                                                                                                                                                                                                                      \
-    for (std::size_t i = 0; i < N; ++i)                                                                                                                                                                                \
-    {                                                                                                                                                                                                                  \
-        data[i] OP s;                                                                                                                                                                                                  \
-    }                                                                                                                                                                                                                  \
-                                                                                                                                                                                                                        \
-    return *this;                                                                                                                                                                                                      \
-}
-
-        MACRO(=)
-        MACRO(+=)
-        MACRO(-=)
-        MACRO(*=)
-        MACRO(/=)
-
-#undef MACRO
-
-        inline auto operator-() const
-        {
-            Vec vector{*this};
-
-            return (vector * static_cast<T>(-1));
-        }
-
-        inline auto operator==(const Vec& v) const
-        {
-            T sum = 0;
-
-            for (std::size_t i = 0; i < N; ++i)
-            {
-                sum += (data[i] == v.data[i] ? 0 : 1);
-            }
-
-            return (sum == 0);
+        inline auto operator=(const Vec& other) -> Vec& 
+        {                    
+            this->data = other.data;
+            return *this;
         }
 
         inline auto Norm() const
@@ -301,46 +258,100 @@ inline auto operator OP(const T s)->Vec&                                        
         using Base::data;
     };
 
-    //!
-    //! \brief Operator definitions.
-    //!
-#define MACRO(OP)                                                                                                                                                                                                          \
-template <typename T, std::size_t N>                                                                                                                                                                                   \
-inline auto operator OP(const Vec<T, N>& v_1, const Vec<T, N>& v_2)                                                                                                                                                    \
-{                                                                                                                                                                                                                      \
-    Vec<T, N> vector{v_1};                                                                                                                                                                                             \
-    vector OP## = v_2;                                                                                                                                                                                                 \
-    return vector;                                                                                                                                                                                                     \
-}
+    template <typename T, std::size_t N> void assign_to_entries(Vec<T,N>& vec, T new_value) {
+        for(size_t i = 0; i < N; ++i) {
+            vec[i] = new_value;
+        }
+    }
 
-    MACRO(+)
-    MACRO(-)
+    template <typename T, std::size_t N>
+    inline auto operator==(const Vec<T,N>& lhs, const Vec<T,N>& rhs)
+    {
+        for (std::size_t i = 0; i < N; ++i)
+        {
+            if(lhs[i] != rhs[i]) return false;
+        }
+        return true;
+    }
 
-#undef MACRO
+    template <typename T, std::size_t N>
+    inline auto operator!=(const Vec<T,N>& lhs, const Vec<T,N>& rhs)
+    {
+        return !(lhs == rhs);
+    }
 
-#define MACRO(OP)                                                                                                                                                                                                          \
-template <typename T, std::size_t N>                                                                                                                                                                                   \
-inline auto operator OP(const Vec<T, N>& v_1, const T s)                                                                                                                                                               \
-{                                                                                                                                                                                                                      \
-    Vec<T, N> vector{v_1};                                                                                                                                                                                             \
-    vector OP## = s;                                                                                                                                                                                                   \
-    return vector;                                                                                                                                                                                                     \
-}                                                                                                                                                                                                                      \
-                                                                                                                                                                                                                        \
-template <typename T, std::size_t N>                                                                                                                                                                                   \
-inline auto operator OP(const T s, const Vec<T, N>& v_1)                                                                                                                                                               \
-{                                                                                                                                                                                                                      \
-    Vec<T, N> vector{v_1};                                                                                                                                                                                             \
-    vector OP## = s;                                                                                                                                                                                                   \
-    return vector;                                                                                                                                                                                                     \
-}
+    template <typename T, std::size_t N>
+    inline auto operator+=(Vec<T,N>& lhs, const Vec<T,N>& rhs) -> Vec<T,N>& {
+        for(size_t i = 0; i < N; ++i) {
+            lhs[i] += rhs[i];
+        }
+        return lhs;
+    }
 
-    MACRO(+)
-    MACRO(-)
-    MACRO(*)
-    MACRO(/)
+    template <typename T, std::size_t N>
+    inline auto operator-=(Vec<T,N>& lhs, const Vec<T,N>& rhs) -> Vec<T,N>& {
+        for(size_t i = 0; i < N; ++i) {
+            lhs[i] -= rhs[i];
+        }
+        return lhs;
+    }
 
-#undef MACRO
+    template <typename T, std::size_t N>
+    inline auto operator*=(Vec<T,N>& lhs, T rhs) -> Vec<T,N>& {
+        for(size_t i = 0; i < N; ++i) {
+            lhs[i] *= rhs;
+        }
+        return lhs;
+    }
+
+    template <typename T, std::size_t N>
+    inline auto operator/=(Vec<T,N>& lhs, T rhs) -> Vec<T,N>& {
+        for(size_t i = 0; i < N; ++i) {
+            lhs[i] /= rhs;
+        }
+        return lhs;
+    }
+
+    template <typename T, std::size_t N>
+    inline auto operator-(const Vec<T,N>& vec) {
+        auto copy = vec;
+        return copy * static_cast<T>(-1);
+    }
+
+    template <typename T, std::size_t N>
+    inline auto operator+(const Vec<T, N>& lhs, const Vec<T, N>& rhs) {
+        auto copy = lhs;
+        copy += rhs;
+        return copy;
+    }
+
+    template <typename T, std::size_t N>
+    inline auto operator-(const Vec<T, N>& lhs, const Vec<T, N>& rhs) {
+        auto copy = lhs;
+        copy -= rhs;
+        return copy;
+    }
+
+    template <typename T, std::size_t N>
+    inline auto operator*(const Vec<T, N>& lhs, T rhs) {
+        auto copy = lhs;
+        copy *= rhs;
+        return copy;
+    }
+
+    template <typename T, std::size_t N>
+    inline auto operator*(T lhs, const Vec<T, N>& rhs) {
+        auto copy = rhs;
+        copy *= lhs;
+        return copy;
+    }
+
+    template <typename T, std::size_t N>
+    inline auto operator/(const Vec<T, N>& lhs, T rhs) {
+        auto copy = lhs;
+        copy /= rhs;
+        return copy;
+    }
 
     //!
     //! \brief Cross product for `N=3`.
@@ -355,7 +366,7 @@ inline auto operator OP(const T s, const Vec<T, N>& v_1)                        
     template <typename T>
     inline auto CrossProduct(const Vec<T, 3>& v_1, const Vec<T, 3>& v_2) -> Vec<T, 3>
     {
-        return {v_1.data[1] * v_2.data[2] - v_1.data[2] * v_2.data[1], v_1.data[2] * v_2.data[0] - v_1.data[0] * v_2.data[2], v_1.data[0] * v_2.data[1] - v_1.data[1] * v_2.data[0]};
+        return { v_1[1] * v_2[2] - v_1[2] * v_2[1], v_1[2] * v_2[0] - v_1[0] * v_2[2], v_1[0] * v_2[1] - v_1[1] * v_2[0] };
     }
 
     //!
@@ -376,7 +387,7 @@ inline auto operator OP(const T s, const Vec<T, N>& v_1)                        
 
         for (std::size_t i = 0; i < N; ++i)
         {
-            dot_product += (v_1.data[i] * v_2.data[i]);
+            dot_product += (v_1[i] * v_2[i]);
         }
 
         return dot_product;
