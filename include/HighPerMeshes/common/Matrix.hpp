@@ -564,6 +564,19 @@ inline auto operator OP(const T x, const Matrix<T, M, N>& m)                    
 
         return matrix;
     }
+
+    template <typename T, std::size_t N, size_t M>
+    auto operator<<(std::ostream& output_stream, const Matrix<T, N, M>& mat) -> std::ostream&
+    {
+        output_stream << "{ ";
+        for (const auto& vec : mat.data)
+        {
+            output_stream << vec << " ";
+        }
+        output_stream << "}";
+
+        return output_stream;
+    }
 } // namespace HPM::dataType
 
 #endif

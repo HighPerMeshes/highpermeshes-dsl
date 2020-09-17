@@ -170,16 +170,36 @@ namespace HPM
         }
 
         template <typename T, typename MeshT, typename DofT>
+        void SetKernelArg(kernel_name_type kernelName, const size_t argIdx, const std::vector<T, OpenCLHandler::SVMAllocator<T>>& buffer)
+        {
+            kernels.at(kernelName).setArg(argIdx, (void*) buffer.data());
+        }
+
+        template <typename T, typename MeshT, typename DofT>
         void UnmapSVMBuffer(Buffer<T, MeshT, DofT, OpenCLHandler::SVMAllocator<T>> & buffer)
         {
             default_queue.enqueueUnmapSVM((void*) buffer.GetData());
         }
+
+        template <typename T>
+        void UnmapSVMBuffer(std::vector<T, OpenCLHandler::SVMAllocator<T>> & buffer)
+        {
+            default_queue.enqueueUnmapSVM((void*) buffer.data());
+        }
+
 
         template <typename T, typename MeshT, typename DofT>
         void MapSVMBuffer(const Buffer<T, MeshT, DofT, OpenCLHandler::SVMAllocator<T>>& buffer)
         {
             default_queue.enqueueMapSVM((void*) buffer.GetData(), CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, sizeof(T)*buffer.GetSize());
         }
+
+        template <typename T>
+        void MapSVMBuffer(const std::vector<T, OpenCLHandler::SVMAllocator<T>>& buffer)
+        {
+            default_queue.enqueueMapSVM((void*) buffer.data(), CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, sizeof(T)*buffer.size());
+        }
+
 
         void EnqueueKernel(kernel_name_type kernelName, size_t global_wi = 1)
         {
