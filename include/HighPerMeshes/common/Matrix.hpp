@@ -189,7 +189,7 @@ inline auto operator OP(const Matrix& m)->Matrix&                               
     {                                                                                                                                                                                                                  \
         for (std::size_t j = 0; j < N; ++j)                                                                                                                                                                            \
         {                                                                                                                                                                                                              \
-            data[i][j] OP m[i][j];                                                                                                                                                                                     \
+            (*this)[i][j] OP m[i][j];                                                                                                                                                                                     \
         }                                                                                                                                                                                                              \
     }                                                                                                                                                                                                                  \
                                                                                                                                                                                                                         \
@@ -209,7 +209,7 @@ inline auto operator OP(const T& x)->Matrix&                                    
     {                                                                                                                                                                                                                  \
         for (std::size_t j = 0; j < N; ++j)                                                                                                                                                                            \
         {                                                                                                                                                                                                              \
-            data[i][j] OP x;                                                                                                                                                                                           \
+            (*this)[i][j] OP x;                                                                                                                                                                                           \
         }                                                                                                                                                                                                              \
     }                                                                                                                                                                                                                  \
                                                                                                                                                                                                                         \
@@ -250,7 +250,7 @@ inline auto operator OP(const T& x)->Matrix&                                    
             {
                 for (std::size_t j = 0; j < N; ++j)
                 {
-                    sum += (data[i][j] == m[i][j] ? 0 : 1);
+                    sum += ((*this)[i][j] == m[i][j] ? 0 : 1);
                 }
             }
 
@@ -270,7 +270,7 @@ inline auto operator OP(const T& x)->Matrix&                                    
             {
                 for (std::size_t j = 0; j < N; ++j)
                 {
-                    matrix[j][i] = data[i][j];
+                    matrix[j][i] = (*this)[i][j];
                 }
             }
 
@@ -298,7 +298,7 @@ inline auto operator OP(const T& x)->Matrix&                                    
 
                 for (std::size_t i = 0; i < N; ++i)
                 {
-                    product *= data[i][permutation[i]];
+                    product *= (*this)[i][permutation[i]];
                 }
 
                 determinant += product;
@@ -350,20 +350,20 @@ inline auto operator OP(const T& x)->Matrix&                                    
 
                 if constexpr (M == 2)
                 {
-                    return {data[1][1] * inv_det, -data[0][1] * inv_det, -data[1][0] * inv_det, data[0][0] * inv_det};
+                    return {(*this)[1][1] * inv_det, -(*this)[0][1] * inv_det, -(*this)[1][0] * inv_det, (*this)[0][0] * inv_det};
                 }
                 else if constexpr (M == 3)
                 {
                     // Sarrus' rule
-                    const T a = data[0][0];
-                    const T b = data[0][1];
-                    const T c = data[0][2];
-                    const T d = data[1][0];
-                    const T e = data[1][1];
-                    const T f = data[1][2];
-                    const T g = data[2][0];
-                    const T h = data[2][1];
-                    const T i = data[2][2];
+                    const T a = (*this)[0][0];
+                    const T b = (*this)[0][1];
+                    const T c = (*this)[0][2];
+                    const T d = (*this)[1][0];
+                    const T e = (*this)[1][1];
+                    const T f = (*this)[1][2];
+                    const T g = (*this)[2][0];
+                    const T h = (*this)[2][1];
+                    const T i = (*this)[2][2];
 
                     return {(e * i - f * h) * inv_det, (c * h - b * i) * inv_det, (b * f - c * e) * inv_det, (f * g - d * i) * inv_det, (a * i - c * g) * inv_det,
                             (c * d - a * f) * inv_det, (d * h - e * g) * inv_det, (b * g - a * h) * inv_det, (a * e - b * d) * inv_det};
