@@ -16,6 +16,25 @@
 
 namespace HPM
 {
+    class ProfCL
+    {
+        private:
+        cl::Event event;
+        cl::CommandQueue queue;
+
+        public:
+        ProfCL(cl::CommandQueue q, cl::Event & e) : event(e), queue(q) {}
+
+        unsigned long elapsed_ns()
+        {
+          queue.finish();
+          return event.getProfilingInfo<CL_PROFILING_COMMAND_END>() 
+                 - event.getProfilingInfo<CL_PROFILING_COMMAND_START>();
+        }
+
+    };
+
+
 
     class OpenCLHandler
     {
@@ -181,9 +200,11 @@ namespace HPM
             default_queue.enqueueMapSVM((void*) buffer.GetData(), CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, sizeof(T)*buffer.GetSize());
         }
 
-        void EnqueueKernel(kernel_name_type kernelName, size_t global_wi = 1)
+        ProfCL EnqueueKernel(kernel_name_type kernelName, size_t global_wi = 1)
         {
-            default_queue.enqueueNDRangeKernel(kernels.at(kernelName),cl::NullRange,cl::NDRange(global_wi),cl::NDRange(1), NULL, NULL);
+            cl::Event kernel_event;
+            default_queue.enqueueNDRangeKernel(kernels.at(kernelName),cl::NullRange,cl::NDRange(global_wi),cl::NDRange(1), NULL, &kernel_event);
+            return ProfCL(default_queue, kernel_event);
         }
 
 
