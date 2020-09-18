@@ -96,7 +96,7 @@ int main()
     _ocl.UnmapSVMBuffer(buffer_out);
     _ocl.UnmapSVMBuffer(buffer_in);
 
-    _ocl.EnqueueKernel("memcopy");
+    ProfCL prof = _ocl.EnqueueKernel("memcopy");
 
     _ocl.MapSVMBuffer(buffer_out);
     _ocl.MapSVMBuffer(buffer_in);
@@ -141,5 +141,6 @@ int main()
     );
 
     std::cout<<(test_passed? "Test PASSED.": "Test FAILED." )<<std::endl;
+    std::cout<<"Kernel execution time: "<<prof.elapsed_ns()<<" ns."<<std::endl;
 
 }
