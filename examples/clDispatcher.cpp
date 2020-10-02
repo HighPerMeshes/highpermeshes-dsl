@@ -20,7 +20,7 @@ std::array {
 
 
 std::string clsource = 
-"kernel void kernel_0(float global const * buffer1, float global const * buffer2)"
+"kernel void kernel_0(float global const * buffer1, float global const * buffer2, int s1, int s2, float global const * buffer3, float global const * buffer4)"
 "{"
 "    printf(\"global_id %i\\n\", get_global_id(0));\n"
 "}"; 
@@ -98,9 +98,8 @@ int main()
                 })
     );
 
-
-    const std::string oclPlatformName = "AMD Accelerated Parallel Processing"; 
-    const std::string oclDeviceName = "gfx1010";
+    const std::string oclPlatformName = (0) ? "AMD Accelerated Parallel Processing" : "FPGA Emulation Platform"; 
+    const std::string oclDeviceName = (0) ? "gfx1010" : "FPGA Emulation Device";
 
     drts::Runtime hpm_opencl{
         GetBuffer<OpenCLHandler::SVMAllocator>{}
@@ -110,11 +109,16 @@ int main()
     //_ocl.LoadKernelsFromBinary("rk.aocx", {"kernel_0"});
     _ocl.LoadKernelsFromString(clsource, {"kernel_0"});
 
-    auto buffer_opencl{
+    auto buffer_opencl_0{
        hpm_opencl.GetBuffer<float>(mesh, Dofs, _ocl.GetSVMAllocator<float>())
     };
 
-    auto kernel_args = std::tie(buffer_opencl, buffer_opencl); //, size, step, buffer_opencl,buffer_opencl, buffer_opencl, buffer_opencl, buffer_opencl, buffer_opencl);
+    auto buffer_opencl_1{
+       hpm_opencl.GetBuffer<float>(mesh, Dofs, _ocl.GetSVMAllocator<float>())
+    };
+
+    int size(1), step(1);
+    auto kernel_args = std::tie(buffer_opencl_0, buffer_opencl_1, size, step, buffer_opencl_1, buffer_opencl_0);//, buffer_opencl, buffer_opencl, buffer_opencl, buffer_opencl);
     size_t wi_global_size = 2;
 
     auto kern_obj = HPM::OpenCLKernelEnqueuer { _ocl,"kernel_0", kernel_args, wi_global_size };    

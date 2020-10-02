@@ -51,8 +51,27 @@ namespace HPM
 
         cl::CommandQueue default_queue;
 
-        std::list<std::any> allocators;           
         std::map<kernel_name_type, cl::Kernel> kernels;
+
+        // SVM stuff 
+        std::list<std::any> allocators;           
+
+        std::set<void *> unmapped_svm_buffers;
+        std::set<void *> seen_svm_buffers;
+
+        bool do_svm_unmap(const void * svm_ptr)
+        {
+            bool buffer_is_seen_for_the_fist_time = seen_svm_buffers.insert((void*) svm_ptr).second;
+            bool buffer_is_not_unmapped = unmapped_svm_buffers.insert((void*) svm_ptr).second;
+            return (buffer_is_seen_for_the_fist_time  || buffer_is_not_unmapped) ;              
+        }
+
+        bool do_svm_map(const void * svm_prt)
+        {
+            size_t buffer_is_unmapped = unmapped_svm_buffers.erase((void*) svm_prt); 
+            return buffer_is_unmapped;
+        }
+
 
         public:
 
@@ -200,28 +219,31 @@ namespace HPM
         }
 
         template <typename T, typename MeshT, typename DofT>
-        void UnmapSVMBuffer(Buffer<T, MeshT, DofT, OpenCLHandler::SVMAllocator<T>> & buffer)
+        void UnmapSVMBuffer(const Buffer<T, MeshT, DofT, OpenCLHandler::SVMAllocator<T>> & buffer)
         {
-            default_queue.enqueueUnmapSVM((void*) buffer.GetData());
+            if(do_svm_unmap(buffer.GetData()))
+                default_queue.enqueueUnmapSVM((void*) buffer.GetData());
         }
 
         template <typename T>
-        void UnmapSVMBuffer(std::vector<T, OpenCLHandler::SVMAllocator<T>> & buffer)
+        void UnmapSVMBuffer(const std::vector<T, OpenCLHandler::SVMAllocator<T>> & buffer)
         {
-            default_queue.enqueueUnmapSVM((void*) buffer.data());
+            if(do_svm_unmap(buffer.data()))
+                default_queue.enqueueUnmapSVM((void*) buffer.data());
         }
-
 
         template <typename T, typename MeshT, typename DofT>
         void MapSVMBuffer(const Buffer<T, MeshT, DofT, OpenCLHandler::SVMAllocator<T>>& buffer)
         {
-            default_queue.enqueueMapSVM((void*) buffer.GetData(), CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, sizeof(T)*buffer.GetSize());
+            if(do_svm_map(buffer.GetData()))
+                default_queue.enqueueMapSVM((void*) buffer.GetData(), CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, sizeof(T)*buffer.GetSize());
         }
 
         template <typename T>
         void MapSVMBuffer(const std::vector<T, OpenCLHandler::SVMAllocator<T>>& buffer)
         {
-            default_queue.enqueueMapSVM((void*) buffer.data(), CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, sizeof(T)*buffer.size());
+            if(do_svm_map(buffer.data()))
+                default_queue.enqueueMapSVM((void*) buffer.data(), CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, sizeof(T)*buffer.size());
         }
 
         ProfCL EnqueueKernel(kernel_name_type kernelName, size_t global_wi = 1)
