@@ -21,5 +21,11 @@ add_executable(openclMemCopyExample OpenCLMemCopyExample.cpp)
 target_link_libraries (openclMemCopyExample PRIVATE -pthread -lOpenCL)
 target_link_libraries (openclMemCopyExample LINK_PRIVATE HighPerMeshes::HighPerMeshes)
 
+add_executable(clDispatcher clDispatcher.cpp)
+target_link_libraries (clDispatcher PRIVATE -pthread -lOpenCL)
+target_link_libraries (clDispatcher LINK_PRIVATE HighPerMeshes::HighPerMeshes)
+target_include_directories(clDispatcher PRIVATE ../tests/util/ ../utility/output)
+
+
 configure_file(./MIDG2_DSL/config.cfg config.cfg COPYONLY)
 configure_file(./MIDG2_DSL/F072.neu F072.neu COPYONLY)

@@ -170,6 +170,11 @@ namespace HPM
             return context;
         }
  
+        cl::CommandQueue& GetDefaultQueue()
+        {
+            return default_queue;
+        }
+
         template <typename T>
         const SVMAllocator<T> & GetSVMAllocator()
         {
@@ -249,14 +254,26 @@ namespace HPM
             ocl.MapSVMBuffer(buffer);
         }
 
+        template <typename T>
+        void Map(const std::vector<T, OpenCLHandler::SVMAllocator<T>>& buffer)
+        {
+            ocl.MapSVMBuffer(buffer);
+        }
+
         template <typename T, typename MeshT, typename DofT>
         void Unmap(Buffer<T, MeshT, DofT, OpenCLHandler::SVMAllocator<T>> & buffer)
         {
             ocl.UnmapSVMBuffer(buffer);
         }
 
-        template <typename NOP_T> void Map(NOP_T arg){}
-        template <typename NOP_T> void Unmap(NOP_T arg){}
+        template <typename T>
+        void Unmap(std::vector<T, OpenCLHandler::SVMAllocator<T>> & buffer)
+        {
+            ocl.UnmapSVMBuffer(buffer);
+        }
+
+        template <typename NOP_T> void Map(NOP_T /* not_used */){}
+        template <typename NOP_T> void Unmap(NOP_T /* not_used */){}
 
         public:
 
@@ -271,8 +288,13 @@ namespace HPM
             std::apply([this](auto&&... arg) { (Map(arg), ...); }, kernel_arguments);  // eventually map the svm buffers
         };
 
-    };
+        template<typename... AdditionalArgs>
+        OpenCLKernelEnqueuer<KernelArg..., AdditionalArgs...> with(std::tuple<AdditionalArgs...>&& additional_args) {
+            return { ocl, kernelName, std::tuple_cat(kernel_arguments, std::move(additional_args)), wi_global_size };
+        }
+        
 
+    };
 
 } // namespace HPM
 

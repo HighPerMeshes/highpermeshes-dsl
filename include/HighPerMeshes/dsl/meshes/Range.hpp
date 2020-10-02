@@ -82,6 +82,11 @@ namespace HPM::mesh
             return mesh.template GetEntities<EntityDimension>(GetIndices(partition));
         }
 
+        //! brief Get the number of entities within a partition
+        inline auto GetSize(const std::size_t partition = 0) const {
+            return indices.at(partition).size();
+        }
+
         private:
         const MeshT& mesh;
         const std::vector<std::vector<std::size_t>> indices;
