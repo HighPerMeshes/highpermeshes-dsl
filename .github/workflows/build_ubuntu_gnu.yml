@@ -19,6 +19,10 @@ jobs:
     - name: install metis
       working-directory: ./CI/github
       run: chmod +x ./install_metis.sh && ./install_metis.sh
+    - name: install opencl 
+      working-directory: ./CI/github
+      run: chmod +x ./install_opencl.sh && ./install_opencl.sh
+
 
     - name: create build directory
       run: mkdir -p build
