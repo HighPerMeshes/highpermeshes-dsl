@@ -311,7 +311,7 @@ namespace HPM
         };
 
         template<typename... AdditionalArgs>
-        OpenCLKernelEnqueuer<KernelArg..., AdditionalArgs...> with(std::tuple<AdditionalArgs...>&& additional_args) {
+        OpenCLKernelEnqueuer<KernelArg..., AdditionalArgs...> with(std::tuple<AdditionalArgs...> additional_args) {
             return { ocl, kernelName, std::tuple_cat(kernel_arguments, std::move(additional_args)), wi_global_size };
         }
         

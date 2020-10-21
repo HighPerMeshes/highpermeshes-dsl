@@ -8,15 +8,13 @@
 
 using namespace HPM;
 
+constexpr auto rk4 = std::array<std::array<double, 2>, 5>{
+    std::array<double, 2>{0.0, 1432997174477.0 / 9575080441755.0},
+    std::array<double, 2>{-567301805773.0 / 1357537059087.0, 5161836677717.0 / 13612068292357.0},
+    std::array<double, 2>{-2404267990393.0 / 2016746695238.0, 1720146321549.0 / 2090206949498.0},
+    std::array<double, 2>{-3550918686646.0 / 2091501179385.0, 3134564353537.0 / 4481467310338.0},
+    std::array<double, 2>{-1275806237668.0 / 842570457699.0, 2277821191437.0 / 14882151754819.0}};
 
-constexpr auto rk4 = 
-std::array { 
-    std::array { 0.0,                                1432997174477.0 / 9575080441755.0 }, 
-    std::array { -567301805773.0 / 1357537059087.0,  5161836677717.0 / 13612068292357.0 }, 
-    std::array { -2404267990393.0 / 2016746695238.0, 1720146321549.0 / 2090206949498.0 }, 
-    std::array { -3550918686646.0 / 2091501179385.0, 3134564353537.0 / 4481467310338.0 }, 
-    std::array { -1275806237668.0 / 842570457699.0,  2277821191437.0 / 14882151754819.0 } 
-}; 
 
 
 std::string clsource = 
@@ -98,8 +96,8 @@ int main()
                 })
     );
 
-    const std::string oclPlatformName = (0) ? "AMD Accelerated Parallel Processing" : "FPGA Emulation Platform"; 
-    const std::string oclDeviceName = (0) ? "gfx1010" : "FPGA Emulation Device";
+    const std::string oclPlatformName = (true) ? "AMD Accelerated Parallel Processing" : "FPGA Emulation Platform"; 
+    const std::string oclDeviceName = (true) ? "gfx1010" : "FPGA Emulation Device";
 
     drts::Runtime hpm_opencl{
         GetBuffer<OpenCLHandler::SVMAllocator>{}
