@@ -26,14 +26,11 @@ int main(int argc, char **argv)
     auto analyze = [](auto seq_result, auto par_result, size_t iteration_mod) {
         
         double seq_time = static_cast<double>(seq_result);
-        double par_time = static_cast<double>(par_result.first);
-        double par_data  = static_cast<double>(par_result.second);
+        double par_time = static_cast<double>(par_result);
         
         std::cout   << "\tSequential Time = " << seq_result << " ns, Avgerage = " << seq_time / iteration_mod << " ns \n"
-                    << "\tParallel Time = " << par_result.first << " ns, Average = " << par_time / iteration_mod << " ns \n"
-                    << "\tSpeedup: " << seq_time / par_time << "\n"
-                    << "\tData Size: " << par_data << " Byte, " << par_data / std::pow(10, 9) << " GByte \n"
-                    << "\tAverage Bandwith: " << (par_data / std::pow(10, 9)) / (par_time / (iteration_mod * std::pow(10, 9))) << " GByte / s \n";
+                    << "\tParallel Time = " << par_time << " ns, Average = " << par_time / iteration_mod << " ns \n"
+                    << "\tSpeedup: " << seq_time / par_time << "\n";
     };
 
     for(size_t mesh_mod = 10; mesh_mod <= 1000; mesh_mod *= 10)
@@ -41,7 +38,7 @@ int main(int argc, char **argv)
         Grid<3> grid{{10 * mesh_mod, 10, 10}};
         const auto& mesh = grid.mesh;
             
-        for(size_t iteration_mod = 100; iteration_mod <= 1000; iteration_mod += 10) {
+        for(size_t iteration_mod = 100; iteration_mod <= 10000; iteration_mod *= 10) {
 
             std::cout << "Tetrahedras: " << mesh.template GetNumEntities<3>() << "\nIterations: " << iteration_mod << "\n";
             std::cout << "Forward Euler: {\n";

@@ -74,7 +74,7 @@ auto RungeKuttaOCL(const Mesh& mesh, size_t iteration_mod, HPM::OpenCLHandler& h
 
     auto data_size = kernel.entity_range.GetSize() * numVolNodes * 4 * 12 * sizeof(double);
 
-    return std::pair { HPM::auxiliary::MeasureTime(
+    return HPM::auxiliary::MeasureTime(
         [&]() {
             {
                 auto hpm_kernel_0 = kernel;
@@ -84,9 +84,7 @@ auto RungeKuttaOCL(const Mesh& mesh, size_t iteration_mod, HPM::OpenCLHandler& h
                 HPM::OpenCLDispatcher{}.Dispatch(HPM::iterator::Range { iteration_mod }, hpm_ocl_kernel_0);
                 hpm_ocl.GetDefaultQueue().finish();
             };
-        }).count(),
-
-        data_size };
+        }).count();
 }
 
 #endif /* RUNGEKUTTAOCL_HPP */

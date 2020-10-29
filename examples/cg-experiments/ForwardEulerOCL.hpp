@@ -52,7 +52,7 @@ auto ForwardEulerOCL(const Mesh &mesh, size_t iteration_mod, HPM::OpenCLHandler 
 
     auto data_size = kernel.entity_range.GetSize() * 3 * sizeof(double);
 
-    return std::pair{HPM::auxiliary::MeasureTime(
+    return HPM::auxiliary::MeasureTime(
                          [&]() {
                              {
                                  auto hpm_kernel_0 = kernel;
@@ -63,8 +63,7 @@ auto ForwardEulerOCL(const Mesh &mesh, size_t iteration_mod, HPM::OpenCLHandler 
                                  hpm_ocl.GetDefaultQueue().finish();
                              };
                          })
-                         .count(),
-                     data_size};
+                         .count();
 }
 
 #endif /* FORWARDEULEROCL_HPP */

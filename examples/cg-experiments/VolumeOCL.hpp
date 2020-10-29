@@ -74,9 +74,7 @@ auto VolumeOCL(const Mesh& mesh, size_t iteration_mod, HPM::OpenCLHandler& hpm_o
             });
         });
 
-    auto data_size = kernel.entity_range.GetSize() * numVolNodes * 4 * 6 * sizeof(double);
-
-    return std::pair { HPM::auxiliary::MeasureTime(
+    return HPM::auxiliary::MeasureTime(
         [&]() {
             {
                 auto hpm_kernel_0 = kernel;
@@ -86,9 +84,7 @@ auto VolumeOCL(const Mesh& mesh, size_t iteration_mod, HPM::OpenCLHandler& hpm_o
                 HPM::OpenCLDispatcher{}.Dispatch(HPM::iterator::Range { iteration_mod }, hpm_ocl_kernel_0);
                 hpm_ocl.GetDefaultQueue().finish();
             };
-        }).count(),
-        data_size
-    };
+        }).count();
 
 }
 
