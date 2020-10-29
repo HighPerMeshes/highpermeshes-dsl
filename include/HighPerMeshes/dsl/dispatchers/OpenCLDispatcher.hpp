@@ -55,26 +55,17 @@ namespace HPM
 
             for (auto step : range)
             {
-                (add_time_step(std::forward<OpenCLKernel>(opencl_kernel), static_cast<int>(step)).enqueue(), ...);
+                (
+                    [&](auto& kernel) {
+                        kernel.updateArg(2, step);
+                        kernel.enqueue();
+                    }(opencl_kernel)
+                , ...);
             }
 
             (std::forward<OpenCLKernel>(opencl_kernel).map(), ...);
         }
 
-        template <typename... OpenCLKernel>
-        auto Dispatch(OpenCLKernel &&... opencl_kernel)
-        {
-            Dispatch(iterator::Range<int> { 0 }, std::forward<OpenCLKernel>(opencl_kernel)...);
-        }
-
-    private:
-        template <typename Kernel>
-        auto add_time_step(Kernel &&kernel, int time_step)
-        {
-            auto split_arguments = tuple_split<2>(std::forward<Kernel>(kernel).kernel_arguments);
-            return std::forward<Kernel>(kernel).clear().with(split_arguments.first).with(std::tuple { time_step }).with(split_arguments.second);
-
-        }
     };
 } // namespace HPM
 

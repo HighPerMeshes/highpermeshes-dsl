@@ -29,3 +29,5 @@ target_include_directories(clDispatcher PRIVATE ../tests/util/ ../utility/output
 
 configure_file(./MIDG2_DSL/config.cfg config.cfg COPYONLY)
 configure_file(./MIDG2_DSL/F072.neu F072.neu COPYONLY)
+
+add_subdirectory(cg-experiments)

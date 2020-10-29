@@ -178,7 +178,6 @@ namespace HPM
             for (std::string kname : kernelNames)
             {
                 kernels.emplace(kname, cl::Kernel(program, kname.c_str(), &krnl_err));
-                std::cerr << kname << " " << krnl_err << std::endl;
             }
         }
 
@@ -302,15 +301,20 @@ namespace HPM
             std::apply([this](auto &&... arg) { (Unmap(arg), ...); }, kernel_arguments); // eventually unmap the svm buffers
         }
 
-        void enqueue()
+        ProfCL enqueue()
         {
             std::apply([this](auto &&... arg) { size_t arg_id(0); ((ocl.SetKernelArg(kernelName, arg_id++, arg)), ...); }, kernel_arguments);
-            ocl.EnqueueKernel(kernelName, wi_global_size);
+            return ocl.EnqueueKernel(kernelName, wi_global_size);
         };
 
         void map()
         {
             std::apply([this](auto &&... arg) { (Map(arg), ...); }, kernel_arguments); // eventually map the svm buffers
+        }
+
+        template<typename Arg>
+        void updateArg(size_t arg_nr, Arg&& arg) {
+            ocl.SetKernelArg(kernelName, arg_nr, std::forward<Arg>(arg));
         }
 
         template <typename... AdditionalArgs>
@@ -319,10 +323,6 @@ namespace HPM
             return {ocl, kernelName, std::tuple_cat(kernel_arguments, std::move(additional_args)), wi_global_size};
         }
 
-        OpenCLKernelEnqueuer<> clear()
-        {
-            return {ocl, kernelName, std::tuple{}, wi_global_size};
-        }
     };
 
 } // namespace HPM
