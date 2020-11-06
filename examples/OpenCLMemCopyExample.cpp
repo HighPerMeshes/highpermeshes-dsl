@@ -83,7 +83,7 @@ int main()
             std::tuple(Write(Cell(buffer_in))),
             [&](const auto &, auto, auto local_view) {
 
-                auto& bufferAccess_out = dof::GetDofs<CellDimension>(std::get<0>(local_view));
+                auto& bufferAccess_out = std::get<0>(local_view);
 
                 const auto dof = 0;
 
@@ -108,8 +108,8 @@ int main()
             std::tuple(Write(Cell(buffer_out)),Read(Cell(buffer_in))),
             [&](const auto &, auto, auto local_view) {
 
-                auto& bufferAccess_out = dof::GetDofs<CellDimension>(std::get<0>(local_view));
-                auto& bufferAccess_in = dof::GetDofs<CellDimension>(std::get<1>(local_view));
+                auto& bufferAccess_out = std::get<0>(local_view);
+                auto& bufferAccess_in = std::get<1>(local_view);
 
                 const auto dof = 0;
 
@@ -128,7 +128,7 @@ int main()
             std::tuple(Read(Cell(buffer_out))),
             [&](const auto &, auto, auto local_view) {
 
-                auto& bufferAccess_in = dof::GetDofs<CellDimension>(std::get<0>(local_view));
+                auto& bufferAccess_in = std::get<0>(local_view);
 
                 const auto dof = 0;
 
