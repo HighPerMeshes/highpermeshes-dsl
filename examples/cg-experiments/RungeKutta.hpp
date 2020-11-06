@@ -52,12 +52,12 @@ auto RungeKutta(const Mesh& mesh, size_t iteration_mod)
         [&](const auto &, const auto &iter, auto lvs) {
             const auto &RKstage = rk4[iter % 5];
 
-            auto &fieldH = dof::GetDofs<CellDimension>(std::get<0>(lvs));
-            auto &fieldE = dof::GetDofs<CellDimension>(std::get<1>(lvs));
-            auto &rhsH = dof::GetDofs<CellDimension>(std::get<2>(lvs));
-            auto &rhsE = dof::GetDofs<CellDimension>(std::get<3>(lvs));
-            auto &resH = dof::GetDofs<CellDimension>(std::get<4>(lvs));
-            auto &resE = dof::GetDofs<CellDimension>(std::get<5>(lvs));
+            auto &fieldH = std::get<0>(lvs);
+            auto &fieldE = std::get<1>(lvs);
+            auto &rhsH = std::get<2>(lvs);
+            auto &rhsE = std::get<3>(lvs);
+            auto &resH = std::get<4>(lvs);
+            auto &resE = std::get<5>(lvs);
 
             HPM::ForEach(numVolNodes, [&](const std::size_t n) {
                 resH[n] = RKstage[0] * resH[n] + /* timeStep * */ rhsH[n]; //!< residual fields

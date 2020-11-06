@@ -9,8 +9,8 @@
 
 using namespace HPM;
 
-template<typename Mesh>
-auto RungeKuttaOCL(const Mesh& mesh, size_t iteration_mod, HPM::OpenCLHandler& hpm_ocl)
+template <typename Mesh>
+auto RungeKuttaOCL(const Mesh &mesh, size_t iteration_mod, HPM::OpenCLHandler &hpm_ocl)
 {
 
     std::fstream hpm_kernel_stream{"RungeKutta.cl"};
@@ -46,8 +46,8 @@ auto RungeKuttaOCL(const Mesh& mesh, size_t iteration_mod, HPM::OpenCLHandler& h
     auto kernel = HPM::ForEachEntity(
         AllCells,
         std::tuple(
-            Cell(std::get<0>(buffers)),
-            Cell(std::get<1>(buffers)),
+            Write(Cell(std::get<0>(buffers))),
+            Write(Cell(std::get<1>(buffers))),
             Cell(std::get<2>(buffers)),
             Cell(std::get<3>(buffers)),
             Cell(std::get<4>(buffers)),
@@ -55,12 +55,12 @@ auto RungeKuttaOCL(const Mesh& mesh, size_t iteration_mod, HPM::OpenCLHandler& h
         [&](const auto &, const auto &iter, auto lvs) {
             const auto &RKstage = rk4[iter % 5];
 
-            auto &fieldH = dof::GetDofs<CellDimension>(std::get<0>(lvs));
-            auto &fieldE = dof::GetDofs<CellDimension>(std::get<1>(lvs));
-            auto &rhsH = dof::GetDofs<CellDimension>(std::get<2>(lvs));
-            auto &rhsE = dof::GetDofs<CellDimension>(std::get<3>(lvs));
-            auto &resH = dof::GetDofs<CellDimension>(std::get<4>(lvs));
-            auto &resE = dof::GetDofs<CellDimension>(std::get<5>(lvs));
+            auto &fieldH = std::get<0>(lvs);
+            auto &fieldE = std::get<1>(lvs);
+            auto &rhsH = std::get<2>(lvs);
+            auto &rhsE = std::get<3>(lvs);
+            auto &resH = std::get<4>(lvs);
+            auto &resE = std::get<5>(lvs);
 
             HPM::ForEach(numVolNodes, [&](const std::size_t n) {
                 resH[n] = RKstage[0] * resH[n] + /* timeStep * */ rhsH[n]; //!< residual fields
@@ -70,21 +70,22 @@ auto RungeKuttaOCL(const Mesh& mesh, size_t iteration_mod, HPM::OpenCLHandler& h
                 assign_to_entries(rhsH[n], 0.0);
                 assign_to_entries(rhsE[n], 0.0);
             });
-        });
-
-    auto data_size = kernel.entity_range.GetSize() * numVolNodes * 4 * 12 * sizeof(double);
+        },
+        HPM::internal::OpenMP_ForEachEntity<3>{});
 
     return HPM::auxiliary::MeasureTime(
-        [&]() {
-            {
-                auto hpm_kernel_0 = kernel;
-                auto mesh_info_0 = MakeMeshInfo(hpm_ocl, hpm_kernel_0.entity_range.GetMesh());
-                auto buffers_0 = GetBuffers(hpm_kernel_0);
-                auto hpm_ocl_kernel_0 = HPM::OpenCLKernelEnqueuer{hpm_ocl, "function_17", std::tuple{mesh_info_0, static_cast<int>(mesh_info_0.size()), size_t { 0 } }, hpm_kernel_0.entity_range.GetSize()}.with(buffers_0);
-                HPM::OpenCLDispatcher{}.Dispatch(HPM::iterator::Range { iteration_mod }, hpm_ocl_kernel_0);
-                hpm_ocl.GetDefaultQueue().finish();
-            };
-        }).count();
+               [&]() {
+                   {
+                       auto hpm_kernel_0 = kernel;
+                       auto buffers_0 = GetBuffers(hpm_kernel_0);
+                       auto offsets_0 = GetOffsets(hpm_kernel_0);
+                       auto hpm_ocl_kernel_0 = HPM::OpenCLKernelEnqueuer{hpm_ocl, "function_17", std::tuple<unsigned long>{0}, hpm_kernel_0.entity_range.GetSize()}.with(buffers_0).with(offsets_0);
+                       HPM::OpenCLDispatcher{}.Dispatch(HPM::iterator::Range{iteration_mod}, hpm_ocl_kernel_0);
+
+                       hpm_ocl.GetDefaultQueue().finish();
+                   };
+               })
+        .count();
 }
 
 #endif /* RUNGEKUTTAOCL_HPP */

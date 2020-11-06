@@ -29,6 +29,23 @@ auto GetBuffers(MeshLoop& mesh_loop) {
     );
 }
 
+template<typename AccessDefinition>
+auto GetOffset(AccessDefinition& access_definition) {
+    return access_definition.buffer->GetOffsets()[access_definition.RequestedDimension];
+}
+
+template<typename MeshLoop>
+auto GetOffsets(MeshLoop& mesh_loop) {
+    return std::apply(
+        [](auto&... access_definitions) {
+            return std::tuple { 
+                GetOffset(access_definitions)...
+            };
+        },
+        mesh_loop.access_definitions
+    );
+}
+
 template<typename Mesh>
 auto MakeMeshInfo(HPM::OpenCLHandler& handler, const Mesh& mesh) {
     

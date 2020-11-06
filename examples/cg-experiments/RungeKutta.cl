@@ -1,15 +1,3 @@
-int GetOffset(
-	size_t mesh_info_size,
-	size_t global const * mesh_info,
-	int dimensionality,
-	size_t const * dofs
-) {
-	int res = 0;
-	for(int dimension = mesh_info_size-1; dimension > dimensionality; --dimension) {
-		    res += mesh_info[dimension] * dofs[dimension];
-	}
-	return res;
-}
 int const constant numVolNodes = 20;
 
 double constant rk4[5][2] = {{0, 1432997174477/9575080441755}, {-567301805773/1357537059087, 5161836677717/13612068292357}, {-2404267990393/2016746695238, 1720146321549/2090206949498}, {-3550918686646/2091501179385, 3134564353537/4481467310338}, {-1275806237668/842570457699, 2277821191437/14882151754819}};
@@ -170,16 +158,16 @@ vec[i]=new_value;
 }
 
 
-void function_16(int global const * mesh_info, int mesh_info_size, unsigned long const iter, double4 global * lvs_0, double4 global * lvs_1, double4 global * lvs_2, double4 global * lvs_3, double4 global * lvs_4, double4 global * lvs_5)
+void function_16(unsigned long const iter, double4 global * lvs_0, double4 global * lvs_1, double4 global * lvs_2, double4 global * lvs_3, double4 global * lvs_4, double4 global * lvs_5, unsigned long hpm_offset_0, unsigned long hpm_offset_1, unsigned long hpm_offset_2, unsigned long hpm_offset_3, unsigned long hpm_offset_4, unsigned long hpm_offset_5)
 {
 size_t const dof_0_0_0_20_0[5] = {0, 0, 0, 20, 0};
 double constant * RKstage = rk4[iter%5];
-double4 global * fieldH = lvs_0+get_global_id(0)*dof_0_0_0_20_0[3]+GetOffset(mesh_info_size, mesh_info, 3, dof_0_0_0_20_0);
-double4 global * fieldE = lvs_1+get_global_id(0)*dof_0_0_0_20_0[3]+GetOffset(mesh_info_size, mesh_info, 3, dof_0_0_0_20_0);
-double4 global * rhsH = lvs_2+get_global_id(0)*dof_0_0_0_20_0[3]+GetOffset(mesh_info_size, mesh_info, 3, dof_0_0_0_20_0);
-double4 global * rhsE = lvs_3+get_global_id(0)*dof_0_0_0_20_0[3]+GetOffset(mesh_info_size, mesh_info, 3, dof_0_0_0_20_0);
-double4 global * resH = lvs_4+get_global_id(0)*dof_0_0_0_20_0[3]+GetOffset(mesh_info_size, mesh_info, 3, dof_0_0_0_20_0);
-double4 global * resE = lvs_5+get_global_id(0)*dof_0_0_0_20_0[3]+GetOffset(mesh_info_size, mesh_info, 3, dof_0_0_0_20_0);
+double4 global * fieldH = lvs_0+get_global_id(0)*20+hpm_offset_0;
+double4 global * fieldE = lvs_1+get_global_id(0)*20+hpm_offset_1;
+double4 global * rhsH = lvs_2+get_global_id(0)*20+hpm_offset_2;
+double4 global * rhsE = lvs_3+get_global_id(0)*20+hpm_offset_3;
+double4 global * resH = lvs_4+get_global_id(0)*20+hpm_offset_4;
+double4 global * resE = lvs_5+get_global_id(0)*20+hpm_offset_5;
 for(unsigned long n = 0; n<numVolNodes; ++n)
 {
 resH[n]=function_3(function_1(RKstage[0], resH[n]), rhsH[n]);;
@@ -193,9 +181,9 @@ function_15(rhsE[n], 0);
 }
 
 
-void kernel function_17(int global const * mesh_info, int mesh_info_size, unsigned long const iter, double4 global * localVectors_0, double4 global * localVectors_1, double4 global * localVectors_2, double4 global * localVectors_3, double4 global * localVectors_4, double4 global * localVectors_5)
+void kernel function_17(unsigned long const iter, double4 global * localVectors_0, double4 global * localVectors_1, double4 global * localVectors_2, double4 global * localVectors_3, double4 global * localVectors_4, double4 global * localVectors_5, unsigned long hpm_offset_0, unsigned long hpm_offset_1, unsigned long hpm_offset_2, unsigned long hpm_offset_3, unsigned long hpm_offset_4, unsigned long hpm_offset_5)
 {
-function_16(mesh_info, mesh_info_size, iter, localVectors_0, localVectors_1, localVectors_2, localVectors_3, localVectors_4, localVectors_5);
+function_16(iter, localVectors_0, localVectors_1, localVectors_2, localVectors_3, localVectors_4, localVectors_5, hpm_offset_0, hpm_offset_1, hpm_offset_2, hpm_offset_3, hpm_offset_4, hpm_offset_5);
 }
 
 

@@ -9,18 +9,15 @@
 
 using namespace HPM;
 
-template<typename Mesh>
-auto VolumeOCL(const Mesh& mesh, size_t iteration_mod, HPM::OpenCLHandler& hpm_ocl)
+template <typename Mesh>
+auto VolumeOCL(const Mesh &mesh, size_t iteration_mod, HPM::OpenCLHandler &hpm_ocl)
 {
 
     std::fstream hpm_kernel_stream{"Volume.cl"};
     std::string hpm_kernel_string((std::istreambuf_iterator<char>(hpm_kernel_stream)), std::istreambuf_iterator<char>());
 
-
     hpm_ocl.LoadKernelsFromString(hpm_kernel_string, {"function_30"});
 
-    //The runtime determines the configuration of HighPerMeshes.
-    //The GetBuffer class determines that we use a normal buffer to allocate space
     HPM::drts::Runtime hpm{HPM::GetBuffer<HPM::OpenCLHandler::SVMAllocator>{}};
 
     // The next step initializes a mesh
@@ -42,6 +39,8 @@ auto VolumeOCL(const Mesh& mesh, size_t iteration_mod, HPM::OpenCLHandler& hpm_o
             return hpm.GetBuffer<CoordinateType>(mesh, Dofs, hpm_ocl.GetSVMAllocator<HPM::dataType::Vec<double, 3>>());
         });
 
+    SequentialDispatcher dispatcher;
+
     using namespace HPM::dataType;
 
     auto kernel = HPM::ForEachEntity(
@@ -58,34 +57,36 @@ auto VolumeOCL(const Mesh& mesh, size_t iteration_mod, HPM::OpenCLHandler& hpm_o
                 Mat3D derivative_E;
                 Mat3D derivative_H; //!< derivative of fields w.r.t reference coordinates
 
-                const auto &fieldH = dof::GetDofs<3>(std::get<0>(lvs));
-                const auto &fieldE = dof::GetDofs<3>(std::get<1>(lvs));
+                const auto &fieldH = std::get<0>(lvs);
+                const auto &fieldE = std::get<1>(lvs);
 
                 HPM::ForEach(numVolNodes, [&](const std::size_t m) {
                     derivative_H += DyadicProduct(derivative[n][m], fieldH[m]);
                     derivative_E += DyadicProduct(derivative[n][m], fieldE[m]);
                 });
 
-                auto &rhsH = dof::GetDofs<3>(std::get<2>(lvs));
-                auto &rhsE = dof::GetDofs<3>(std::get<3>(lvs));
+                auto &rhsH = std::get<2>(lvs);
+                auto &rhsE = std::get<3>(lvs);
 
                 rhsH[n] += -Curl(D, derivative_E); //!< first half of right-hand-side of fields
                 rhsE[n] += Curl(D, derivative_H);
             });
-        });
+        },
+        HPM::internal::OpenMP_ForEachEntity<3>{});
 
     return HPM::auxiliary::MeasureTime(
-        [&]() {
-            {
-                auto hpm_kernel_0 = kernel;
-                auto mesh_info_0 = MakeMeshInfo(hpm_ocl, hpm_kernel_0.entity_range.GetMesh());
-                auto buffers_0 = GetBuffers(hpm_kernel_0);
-                auto hpm_ocl_kernel_0 = HPM::OpenCLKernelEnqueuer{hpm_ocl, "function_30", std::tuple{mesh_info_0, static_cast<int>(mesh_info_0.size()), size_t { 0 } }, hpm_kernel_0.entity_range.GetSize()}.with(buffers_0).with(std::tuple{GetInverseJacobian(hpm_kernel_0.entity_range)});
-                HPM::OpenCLDispatcher{}.Dispatch(HPM::iterator::Range { iteration_mod }, hpm_ocl_kernel_0);
-                hpm_ocl.GetDefaultQueue().finish();
-            };
-        }).count();
+               [&]() {
+                   {
+                       auto hpm_kernel_0 = kernel;
+                       auto buffers_0 = GetBuffers(hpm_kernel_0);
+                       auto offsets_0 = GetOffsets(hpm_kernel_0);
+                       auto hpm_ocl_kernel_0 = HPM::OpenCLKernelEnqueuer{hpm_ocl, "function_30", std::tuple<unsigned long>{0}, hpm_kernel_0.entity_range.GetSize()}.with(buffers_0).with(offsets_0).with(std::tuple{GetInverseJacobian(hpm_kernel_0.entity_range)});
+                       HPM::OpenCLDispatcher{}.Dispatch(HPM::iterator::Range{size_t{iteration_mod}}, hpm_ocl_kernel_0);
 
+                       hpm_ocl.GetDefaultQueue().finish();
+                   };
+               })
+        .count();
 }
 
 #endif /* VOLUMEOCL_HPP */

@@ -19,26 +19,16 @@ namespace HPM
     //! \see
     //! HPM::AccessDefinitionHelpers
     //!
-    template <typename BufferT_, typename AccessPattern, typename DofRequest, AccessMode Mode_>
+    template <typename BufferT_, typename AccessPattern, size_t RequestedDimension_, AccessMode Mode_>
     struct AccessDefinition
     {
         using BufferT = BufferT_;
+        static constexpr auto RequestedDimension = std::integral_constant<size_t, RequestedDimension_> {};
 
         static constexpr std::integral_constant<AccessMode, Mode_> Mode{};
-        static constexpr DofRequest Dofs{};
         static constexpr bool UseCompileTimeDofs = BufferT::DofT::IsConstexprArray;
 
-        // \todo { Remove / Resolve this macro. Template parameter? - Stefan G. 2.12.19 }
-#if defined(HPM_LOCAL_BUFFER_COPY_MODE)
-        // \todo { Bug - FW 3.12.19 }
-        template <std::size_t NumDofs = 0>
-        using LocalBuffer = ::HPM::internal::LocalBuffer<BufferT, Mode_, true, NumDofs>;
-#else
-        template <std::size_t NumDofs = 0>
-        using LocalBuffer = ::HPM::internal::LocalBuffer<BufferT, Mode_, false, NumDofs>;
-#endif
-
-        AccessDefinition(BufferT* buffer, AccessPattern pattern, DofRequest, std::integral_constant<AccessMode, Mode_>) : buffer(buffer), pattern(pattern) {}
+        AccessDefinition(BufferT* buffer, AccessPattern pattern, std::integral_constant<size_t, RequestedDimension_>, std::integral_constant<AccessMode, Mode_>) : buffer(buffer), pattern(pattern) {}
 
         //! Member to store the referenced buffer
         BufferT* buffer;

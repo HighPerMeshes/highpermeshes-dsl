@@ -23,6 +23,10 @@ endfunction()
 
 Experiment(Experiments)
 
+Experiment(ForwardEuler)
+Experiment(RungeKutta)
+Experiment(Volume)
+
 configure_file(ForwardEuler.cl ForwardEuler.cl COPYONLY)
 configure_file(RungeKutta.cl RungeKutta.cl COPYONLY)
 configure_file(Volume.cl Volume.cl COPYONLY)

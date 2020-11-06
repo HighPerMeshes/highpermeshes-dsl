@@ -9,13 +9,15 @@
 
 using namespace HPM;
 
-template<typename Mesh>
-auto Volume(const Mesh& mesh, size_t iteration_mod)
+int main()
 {
     //The runtime determines the configuration of HighPerMeshes.
     //The GetBuffer class determines that we use a normal buffer to allocate space
     drts::Runtime hpm{
         GetBuffer{}};
+
+    Grid<3> grid{{10, 10, 10}};
+    const auto& mesh = grid.mesh;
 
     // The next step initializes a mesh
     // For this purpose we define a mesh class that needs two types as information: A CoordinateType that tells us which dimensionality the mesh has and how to store the coordinates and a topology class that can be used to define the mesh topology, i.e. how nodes are connected to each other.
@@ -75,7 +77,7 @@ auto Volume(const Mesh& mesh, size_t iteration_mod)
     return HPM::auxiliary::MeasureTime(
         [&]() {
             dispatcher.Execute(
-                HPM::iterator::Range { iteration_mod },
+                HPM::iterator::Range { size_t { 1 } },
                 kernel
             );
         }

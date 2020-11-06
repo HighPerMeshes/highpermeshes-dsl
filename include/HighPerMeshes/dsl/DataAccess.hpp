@@ -13,7 +13,5 @@
 #include <HighPerMeshes/dsl/data_access/Dof.hpp>
 #include <HighPerMeshes/dsl/data_access/DofRequests.hpp>
 #include <HighPerMeshes/dsl/data_access/LocalView.hpp>
-#include <HighPerMeshes/dsl/data_access/LocalViewPlain.hpp>
-#include <HighPerMeshes/dsl/data_access/LocalViewPlain.h>
 
 #endif

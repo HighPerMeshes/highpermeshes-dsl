@@ -1,5 +1,5 @@
-#ifndef FORWARDEULEROCL_HPP
-#define FORWARDEULEROCL_HPP
+#ifndef FORWARDEULER_HPP
+#define FORWARDEULER_HPP
 #include <HighPerMeshes.hpp>
 
 #include <Grid.hpp>
@@ -9,16 +9,16 @@
 
 using namespace HPM;
 
-template <typename Mesh>
-auto ForwardEulerOCL(const Mesh &mesh, size_t iteration_mod, HPM::OpenCLHandler &hpm_ocl)
-{
-    std::fstream hpm_kernel_stream{"ForwardEuler.cl"};
-    std::string hpm_kernel_string((std::istreambuf_iterator<char>(hpm_kernel_stream)), std::istreambuf_iterator<char>());
-    hpm_ocl.LoadKernelsFromString(hpm_kernel_string, {"function_1"});
+template<typename T> struct DEBUG;
 
+int main()
+{
     //The runtime determines the configuration of HighPerMeshes.
     //The GetBuffer class determines that we use a normal buffer to allocate space
-    HPM::drts::Runtime hpm{HPM::GetBuffer<HPM::OpenCLHandler::SVMAllocator>{}};
+    HPM::drts::Runtime hpm{ HPM::GetBuffer{} };
+
+    Grid<3> grid{{10, 10, 10}};
+    const auto& mesh = grid.mesh;
 
     // The next step initializes a mesh
     // For this purpose we define a mesh class that needs two types as information: A CoordinateType that tells us which dimensionality the mesh has and how to store the coordinates and a topology class that can be used to define the mesh topology, i.e. how nodes are connected to each other.
@@ -31,7 +31,7 @@ auto ForwardEulerOCL(const Mesh &mesh, size_t iteration_mod, HPM::OpenCLHandler 
 
     auto buffers = MakeTuple<2>(
         [&](auto) {
-            return hpm.GetBuffer<double>(mesh, Dofs, hpm_ocl.GetSVMAllocator<double>());
+            return hpm.GetBuffer<double>(mesh, Dofs);
         });
 
     SequentialDispatcher dispatcher;
@@ -42,28 +42,25 @@ auto ForwardEulerOCL(const Mesh &mesh, size_t iteration_mod, HPM::OpenCLHandler 
             ReadWrite(Node(std::get<0>(buffers))),
             Read(Node(std::get<1>(buffers)))),
         [&](const auto &, const auto &, auto &lvs) {
+            
             auto &u = std::get<0>(lvs);
             const auto &u_d = std::get<1>(lvs);
-
+            
             auto tau = 0.2;
 
             u[0] += tau * u_d[0];
-        },
-        HPM::internal::OpenMP_ForEachEntity<0>{});
+        }
+        , HPM::internal::OpenMP_ForEachEntity<0>{}
+        );
 
     return HPM::auxiliary::MeasureTime(
-               [&]() {
-                   {
-                       auto hpm_kernel_0 = kernel;
-                       auto buffers_0 = GetBuffers(hpm_kernel_0);
-                       auto offsets_0 = GetOffsets(hpm_kernel_0);
-                       auto hpm_ocl_kernel_0 = HPM::OpenCLKernelEnqueuer{hpm_ocl, "function_1", std::tuple<unsigned long>{0}, hpm_kernel_0.entity_range.GetSize()}.with(buffers_0).with(offsets_0);
-                       HPM::OpenCLDispatcher{}.Dispatch(HPM::iterator::Range{iteration_mod}, hpm_ocl_kernel_0);
-
-                       hpm_ocl.GetDefaultQueue().finish();
-                   };
-               })
-        .count();
+        [&]() {
+            dispatcher.Execute(
+                HPM::iterator::Range { size_t { 1 } },
+                kernel
+            );
+        }
+    ).count();
 }
+#endif /* FORWARDEULER_HPP */
 
-#endif /* FORWARDEULEROCL_HPP */

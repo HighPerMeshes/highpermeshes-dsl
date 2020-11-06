@@ -10,6 +10,7 @@
 #include "RungeKuttaOCL.hpp"
 #include "Volume.hpp"
 #include "VolumeOCL.hpp"
+#include "RungeKuttaStripped.hpp"
 
 #include <cmath>
 
@@ -41,13 +42,14 @@ int main(int argc, char **argv)
         for(size_t iteration_mod = 100; iteration_mod <= 10000; iteration_mod *= 10) {
 
             std::cout << "Tetrahedras: " << mesh.template GetNumEntities<3>() << "\nIterations: " << iteration_mod << "\n";
+            
             std::cout << "Forward Euler: {\n";
-
             analyze(
                 ForwardEuler(mesh, iteration_mod),
                 ForwardEulerOCL(mesh, iteration_mod, hpm_ocl),
                 iteration_mod
             );
+
             std::cout << "}\n";
 
             std::cout << "Runge Kutta: {\n";

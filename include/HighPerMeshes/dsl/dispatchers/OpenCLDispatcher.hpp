@@ -15,27 +15,6 @@
 
 namespace HPM
 {
-
-    template <size_t Offset, typename Tuple, size_t... Indices>
-    auto split_impl(Tuple &&tuple, std::index_sequence<Indices...> /* not_used */)
-    {
-
-        return std::tuple{
-            std::get<Indices + Offset>(std::forward<Tuple>(tuple))...};
-    }
-
-    template <size_t Index, typename Tuple,
-              typename FrontIndices = std::make_index_sequence<Index>,
-              typename BackIndices = std::make_index_sequence<std::tuple_size_v<std::decay_t<Tuple>> - Index>>
-    auto tuple_split(Tuple &&tuple)
-    {
-
-        return std::pair{
-            split_impl<0>(std::forward<Tuple>(tuple), FrontIndices{}),
-            split_impl<Index>(std::forward<Tuple>(tuple), BackIndices{}),
-        };
-    }
-
     //!
     //! \brief Provides a class to execute OpenCL Kernels sequentially.
     //!
@@ -57,7 +36,7 @@ namespace HPM
             {
                 (
                     [&](auto& kernel) {
-                        kernel.updateArg(2, step);
+                        kernel.updateArg(0, step);
                         kernel.enqueue();
                     }(opencl_kernel)
                 , ...);

@@ -63,6 +63,8 @@ namespace HPM
 
         const auto& GetDofs() const { return dofs; }
 
+        const auto& GetOffsets() const { return offsets; }
+
       protected:
         const MeshT& mesh;
         const dataType::ConstArray<std::size_t, MeshT::CellDimension + 2> dofs;

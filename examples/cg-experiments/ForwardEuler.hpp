@@ -9,6 +9,8 @@
 
 using namespace HPM;
 
+template<typename T> struct DEBUG;
+
 template<typename Mesh>
 auto ForwardEuler(const Mesh& mesh, size_t iteration_mod)
 {
@@ -40,8 +42,8 @@ auto ForwardEuler(const Mesh& mesh, size_t iteration_mod)
             Read(Node(std::get<1>(buffers)))),
         [&](const auto &, const auto &, auto &lvs) {
             
-            auto &u = dof::GetDofs<0>(std::get<0>(lvs));
-            const auto &u_d = dof::GetDofs<0>(std::get<1>(lvs));
+            auto &u = std::get<0>(lvs);
+            const auto &u_d = std::get<1>(lvs);
             
             auto tau = 0.2;
 
