@@ -15,15 +15,13 @@
 TEST(IsAccessDefinitionTest, is_access_definition)
 {
 
-    using TestType1 = int;
-    using TestType2 = float;
+    using TestType = int;
 
     using CoordinateType = HPM::dataType::Coord3D;
     using Mesh = HPM::mesh::Mesh<CoordinateType, HPM::entity::Simplex>;
     using BufferT = HPM::Buffer<CoordinateType, Mesh, HPM::dataType::Dofs<0, 0, 0, 4>>;
 
-    static_assert(HPM::IsAccessDefinition<HPM::AccessDefinition<BufferT, TestType1, TestType2, HPM::AccessMode::Accumulate>>);
-    static_assert(HPM::IsAccessDefinition<HPM::AccessDefinition<BufferT, TestType2, TestType1, HPM::AccessMode::Read>>);
+    static_assert(HPM::IsAccessDefinition<HPM::AccessDefinition<BufferT, TestType, 0, HPM::AccessMode::Read>>);
 
     static_assert(not HPM::IsAccessDefinition<BufferT>);
     static_assert(not HPM::IsAccessDefinition<Mesh>);

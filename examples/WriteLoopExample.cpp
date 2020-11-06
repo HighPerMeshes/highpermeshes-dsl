@@ -28,7 +28,7 @@ int main() {
         std::tuple(Write(Cell(cell_buffer))),
         [&](const auto &, auto, auto local_view) {
 
-            auto& bufferAccess = dof::GetDofs<3>(std::get<0>(local_view));
+            auto& bufferAccess = std::get<0>(local_view);
 
             const auto dof = 0;
 
@@ -47,7 +47,7 @@ int main() {
         std::tuple(Write(Node(node_buffer))),
         [&](const auto &, auto, auto local_view) {
 
-            auto& bufferAccess = dof::GetDofs<0>(std::get<0>(local_view));
+            auto& bufferAccess = std::get<0>(local_view);
 
             const auto dof = 0;
 

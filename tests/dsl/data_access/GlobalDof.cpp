@@ -99,10 +99,10 @@ TEST_F(GlobalBufferTest_2d, Pointers)
         std::tuple(Read(Node(field)), Read(Edge(field)), Read(Cell(field)), Write(Global(field))),
         [&] (const auto& cell, auto&&, auto lvs)
         {
-            const auto& field_node = dof::GetDofs<dof::Name::Node>(std::get<0>(lvs));
-            const auto& field_edge = dof::GetDofs<dof::Name::Edge>(std::get<1>(lvs));
-            const auto& field_cell = dof::GetDofs<dof::Name::Cell>(std::get<2>(lvs));
-            auto& field_global = dof::GetDofs<dof::Name::Global>(std::get<3>(lvs));
+            const auto& field_node = std::get<0>(lvs);
+            const auto& field_edge = std::get<1>(lvs);
+            const auto& field_cell = std::get<2>(lvs);
+            auto& field_global = std::get<3>(lvs);
 
             const auto& node_id = GetSmallestSubEntityIndex<0>(cell);
             const auto& edge_id = GetSmallestSubEntityIndex<1>(cell);
@@ -154,11 +154,11 @@ TEST_F(GlobalBufferTest_3d, Pointers)
         std::tuple(Read(Node(field)), Read(Edge(field)), Read(Face(field)), Read(Cell(field)), Write(Global(field))),
         [&] (const auto& cell, auto&&, auto lvs)
         {
-            const auto& field_node = dof::GetDofs<dof::Name::Node>(std::get<0>(lvs));
-            const auto& field_edge = dof::GetDofs<dof::Name::Edge>(std::get<1>(lvs));
-            const auto& field_face = dof::GetDofs<dof::Name::Face>(std::get<2>(lvs));
-            const auto& field_cell = dof::GetDofs<dof::Name::Cell>(std::get<3>(lvs));
-            auto& field_global = dof::GetDofs<dof::Name::Global>(std::get<4>(lvs));
+            const auto& field_node = std::get<0>(lvs);
+            const auto& field_edge = std::get<1>(lvs);
+            const auto& field_face = std::get<2>(lvs);
+            const auto& field_cell = std::get<3>(lvs);
+            auto& field_global = std::get<4>(lvs);
 
             const auto& node_id = GetSmallestSubEntityIndex<0>(cell);
             const auto& edge_id = GetSmallestSubEntityIndex<1>(cell);

@@ -62,7 +62,7 @@ namespace HPM::internal
         template <typename AccessDefinition>
         static auto GetLocalBuffer(const AccessDefinition& access, std::size_t num_dofs)
         {
-            return LocalBuffer { access.buffer, 0 };
+            return LocalBuffer { access.buffer, access.Mode, 0 };
         }
 
         //!

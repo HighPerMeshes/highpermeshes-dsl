@@ -50,9 +50,9 @@ auto WriteLoop(std::mutex& mutex, std::ofstream& file, HPM::mesh::Range<Dimensio
 
     return ForEachEntity(
         range,
-        std::tuple( AccessDefinition { &buffer, AccessPatterns::SimplePattern, dof_requests::RequestEquals<Mesh::CellDimension + 2, Dimension>, ReadConstant } ),
+        std::tuple( RequestDim<Dimension>(buffer) ),
         [&, condition](const auto &entity, auto&& time_step, auto lvs) {
-            auto &field = dof::GetDofs<Dimension>(std::get<0>(lvs));
+            auto &field = std::get<0>(lvs);
 
             if(!condition(entity, time_step)) return;
 

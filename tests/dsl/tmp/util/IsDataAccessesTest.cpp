@@ -20,14 +20,11 @@ TEST(IsDataAccesses, is_data_accesses)
 
     using TestType = int;
 
-    using AccessDefinition1 = HPM::AccessDefinition<BufferT, TestType, TestType, HPM::AccessMode::Accumulate>;
-    using AccessDefinition2 = HPM::AccessDefinition<BufferT, TestType, TestType, HPM::AccessMode::Read>;
-    using AccessDefinition3 = HPM::AccessDefinition<BufferT, TestType, TestType, HPM::AccessMode::ReadWrite>;
+    using AccessDefinition1 = HPM::AccessDefinition<BufferT, TestType, 0, HPM::AccessMode::Read>;
+    using AccessDefinition2 = HPM::AccessDefinition<BufferT, TestType, 0, HPM::AccessMode::ReadWrite>;
 
     static_assert(HPM::IsAccessDefinitions<std::tuple<AccessDefinition1>>);
     static_assert(HPM::IsAccessDefinitions<std::tuple<AccessDefinition1, AccessDefinition2>>);
-    static_assert(HPM::IsAccessDefinitions<std::tuple<AccessDefinition1, AccessDefinition2, AccessDefinition3>>);
-    static_assert(HPM::IsAccessDefinitions<std::tuple<AccessDefinition3>>);
 
     static_assert(not HPM::IsAccessDefinitions<std::tuple<AccessDefinition1, int>>);
     static_assert(not HPM::IsAccessDefinitions<std::tuple<AccessDefinition1, BufferT, Mesh>>);
