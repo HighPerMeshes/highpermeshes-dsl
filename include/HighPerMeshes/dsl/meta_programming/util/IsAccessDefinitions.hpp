@@ -22,8 +22,8 @@ namespace HPM
     };
 
     //! Special case: T is a AccessDefinition
-    template <typename BufferT, typename AccessPatternT, typename DofRequest, AccessMode DataAccess>
-    struct IsAccessDefinitionImpl<AccessDefinition<BufferT, AccessPatternT, DofRequest, DataAccess>> : std::true_type
+    template <typename BufferT, typename AccessPatternT, size_t RequestedDim, AccessMode DataAccess>
+    struct IsAccessDefinitionImpl<AccessDefinition<BufferT, AccessPatternT, RequestedDim, DataAccess>> : std::true_type
     {
     };
 

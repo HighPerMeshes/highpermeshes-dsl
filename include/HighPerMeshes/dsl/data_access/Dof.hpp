@@ -164,49 +164,6 @@ namespace HPM::dof
     } // namespace
 
     //!
-    //! \brief Get the dofs of a certain dimension for a given `LocalView` element.
-    //!
-    //! The local view element is a tuple of arrays of `LocalBuffers`.
-    //! This function provides access to the arrays.
-    //! For the `CellDimension`, a reference to the `LocalBuffer` is returned.
-    //!
-    //! \tparam PseudoDimension the requested dimension (according to the entity names above)
-    //! \tparam LocalViewElement a tuple of arrays of `LocalBuffers`
-    //! \param local_view a tuple instance
-    //! \return a reference to the array of `LocalBuffers` according to the requested dimension: for the `CellDimension`, a reference to the `LocalBuffer` is returned
-    //!
-template <typename T>
-class DEBUG;
-
-    template <std::size_t PseudoDimension, typename LocalViewElement>
-    constexpr auto& GetDofs(LocalViewElement& local_view)
-    {
-        static_assert(std::tuple_size_v<LocalViewElement>> 0, "error: you are trying to process an empty tuple");
-
-        // Get the cell dimension and use it to resolve the `PseudoDimension`.
-        constexpr std::size_t TupleSize = std::tuple_size_v<LocalViewElement> - 1;
-        constexpr std::size_t CellDimension = std::tuple_element_t<TupleSize, LocalViewElement>{};
-        constexpr std::size_t Dimension = ResolveDimension<PseudoDimension, CellDimension>();
-
-        // Check if the `Dimension` is valid and if the requested dimension is for an `InvalidLocalBuffer`.
-        static_assert(Dimension <= (CellDimension + 1), "error: Dimension is larger than the mesh-element dimension plus 1 (global dofs)");
-        static_assert(!std::is_same_v<InvalidLocalBuffer, typename std::tuple_element_t<Dimension, LocalViewElement>>, "error: you are trying to access an invalid local buffer");
-
-        // If the cell dimension is requested, return a reference to the `LocalBuffer`.
-        using ItemType = std::decay_t<decltype(std::get<Dimension>(local_view))>;
-
-        if constexpr (Dimension >= CellDimension || std::tuple_size_v<ItemType> == 1)
-        {
-            return std::get<Dimension>(local_view)[0];
-        }
-        else
-        {
-            return std::get<Dimension>(local_view);
-        }
-        
-    }
-
-    //!
     //! \brief Get the offset into a partition of dofs of a certain `Dimension` relative to some base pointer.
     //!
     //! \tparam PseudoDimension the requested dimension (according to the entity names above)

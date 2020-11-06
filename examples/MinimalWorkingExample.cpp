@@ -75,7 +75,7 @@ int main()
                 // local_view is used to access the local representation of the passed loops. They are ordered in the same way as the tuple specified just before it
                 [&](const auto &, auto, auto local_view) {
 
-                    auto& bufferAccess = dof::GetDofs<CellDimension>(std::get<0>(local_view));
+                    auto& bufferAccess = std::get<0>(local_view);
 
                     const auto dof = 0;
 
@@ -107,7 +107,7 @@ int main()
                 // local_view is used to access the local representation of the passed loops. They are ordered in the same way as the tuple specified just before it
                 [&](const auto &, auto, auto local_view) {
 
-                    auto& bufferAccess = dof::GetDofs<CellDimension>(std::get<0>(local_view));
+                    auto& bufferAccess = std::get<0>(local_view);
 
                     const auto dof = 0;
 

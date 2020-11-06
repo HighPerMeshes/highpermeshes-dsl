@@ -23,53 +23,52 @@ namespace HPM
     //! \todo {I think this indirect inference of the Mesh from the buffer is kind of hidden, but I do not now a better solution atm - Stefan G. 23.8.19}
     //!
     //! \{
+    template<size_t Dim, typename BufferT>
+    auto RequestDim(BufferT& buffer) {
+        return AccessDefinition { &buffer, AccessPatterns::SimplePattern, std::integral_constant<size_t, Dim> {}, ReadWriteConstant};
+    }
+
     template <typename BufferT>
     auto Global(BufferT& buffer)
     {
         using MeshT = typename BufferT::MeshT;
-        return AccessDefinition{&buffer, AccessPatterns::SimplePattern, dof_requests::RequestEquals<MeshT::CellDimension + 2, MeshT::CellDimension + 1>, ReadWriteConstant};
+        return RequestDim<MeshT::CellDimension + 1>(buffer);
     }
+
     template <typename BufferT>
     auto Cell(BufferT& buffer)
     {
         using MeshT = typename BufferT::MeshT;
-        return AccessDefinition{&buffer, AccessPatterns::SimplePattern, dof_requests::RequestEquals<MeshT::CellDimension + 2, MeshT::CellDimension>, ReadWriteConstant};
+        return RequestDim<MeshT::CellDimension>(buffer);
     }
+
     template <typename BufferT>
     auto NeighboringMeshElementOrSelf(BufferT& buffer)
     {
         using MeshT = typename BufferT::MeshT;
-        return AccessDefinition{&buffer, AccessPatterns::NeighboringMeshElementOrSelfPattern, dof_requests::RequestEquals<MeshT::CellDimension + 2, MeshT::CellDimension>, ReadWriteConstant};
+        return AccessDefinition{&buffer, AccessPatterns::NeighboringMeshElementOrSelfPattern, std::integral_constant<size_t, MeshT::CellDimension> {}, ReadWriteConstant};
     }
     template <typename BufferT>
     auto ContainingMeshElement(BufferT& buffer)
     {
         using MeshT = typename BufferT::MeshT;
-        return AccessDefinition{&buffer, AccessPatterns::ContainingMeshElementPattern, dof_requests::RequestEquals<MeshT::CellDimension + 2, MeshT::CellDimension>, ReadWriteConstant};
-    }
-    template <typename BufferT>
-    auto All(BufferT& buffer)
-    {
-        using MeshT = typename BufferT::MeshT;
-        return AccessDefinition{&buffer, AccessPatterns::SimplePattern, dof_requests::RequestAll<MeshT::CellDimension + 2>, ReadWriteConstant};
+        return AccessDefinition{&buffer, AccessPatterns::ContainingMeshElementPattern, std::integral_constant<size_t, MeshT::CellDimension> {}, ReadWriteConstant};
     }
     template <typename BufferT>
     auto Node(BufferT& buffer)
     {
-        using MeshT = typename BufferT::MeshT;
-        return AccessDefinition{&buffer, AccessPatterns::SimplePattern, dof_requests::RequestEquals<MeshT::CellDimension + 2, 0>, ReadWriteConstant};
+        return RequestDim<0>(buffer);
     }
     template <typename BufferT>
     auto Edge(BufferT& buffer)
     {
-        using MeshT = typename BufferT::MeshT;
-        return AccessDefinition{&buffer, AccessPatterns::SimplePattern, dof_requests::RequestEquals<MeshT::CellDimension + 2, 1>, ReadWriteConstant};
+        return RequestDim<1>(buffer);
     }
     template <typename BufferT>
     auto Face(BufferT& buffer)
     {
         using MeshT = typename BufferT::MeshT;
-        return AccessDefinition{&buffer, AccessPatterns::SimplePattern, dof_requests::RequestEquals<MeshT::CellDimension + 2, MeshT::CellDimension - 1>, ReadWriteConstant};
+        return RequestDim<MeshT::CellDimension - 1>(buffer);
     }
     //! \}
 
@@ -84,19 +83,19 @@ namespace HPM
     //! \{
     auto Read = [](auto&& access_definition) {
         static_assert(IsAccessDefinition<std::decay_t<decltype(access_definition)>>);
-        return AccessDefinition{std::move(access_definition.buffer), std::move(access_definition.pattern), access_definition.Dofs, ReadConstant};
+        return AccessDefinition{std::move(access_definition.buffer), std::move(access_definition.pattern), access_definition.RequestedDimension, ReadConstant};
     };
     auto Write = [](auto&& access_definition) {
         static_assert(IsAccessDefinition<std::decay_t<decltype(access_definition)>>);
-        return AccessDefinition{std::move(access_definition.buffer), std::move(access_definition.pattern), access_definition.Dofs, WriteConstant};
+        return AccessDefinition{std::move(access_definition.buffer), std::move(access_definition.pattern), access_definition.RequestedDimension, WriteConstant};
     };
     auto Accumulate = [](auto&& access_definition) {
         static_assert(IsAccessDefinition<std::decay_t<decltype(access_definition)>>);
-        return AccessDefinition{std::move(access_definition.buffer), std::move(access_definition.pattern), access_definition.Dofs, AccumulateConstant};
+        return AccessDefinition{std::move(access_definition.buffer), std::move(access_definition.pattern), access_definition.RequestedDimension, AccumulateConstant};
     };
     auto ReadWrite = [](auto&& access_definition) {
         static_assert(IsAccessDefinition<std::decay_t<decltype(access_definition)>>);
-        return AccessDefinition{std::move(access_definition.buffer), std::move(access_definition.pattern), access_definition.Dofs, ReadWriteConstant};
+        return AccessDefinition{std::move(access_definition.buffer), std::move(access_definition.pattern), access_definition.RequestedDimension, ReadWriteConstant};
     };
     //! \}
 } // namespace HPM

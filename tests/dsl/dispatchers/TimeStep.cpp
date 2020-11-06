@@ -32,7 +32,7 @@ TEST(SequentialDispatcherTest, TimeSteps)
             AllCells,
             std::tuple(Write(Cell(buffer))),
             [&](const auto &, auto step, auto local_view) {
-              auto &bufferAccess = dof::GetDofs<CellDimension>(std::get<0>(local_view));
+              auto &bufferAccess = std::get<0>(local_view);
               bufferAccess[step] = step;
             }));
   };
@@ -75,14 +75,14 @@ TEST(SequentialDispatcherTest, TimeSteps)
             AllCells,
             std::tuple(Write(Cell(buffer))),
             [&](const auto &, auto step, auto local_view) {
-              auto &bufferAccess = dof::GetDofs<CellDimension>(std::get<0>(local_view));
+              auto &bufferAccess = std::get<0>(local_view);
               bufferAccess[step] = -1;
             }),
         ForEachEntity(
             AllCells,
             std::tuple(Write(Cell(buffer))),
             [&](const auto &, auto step, auto local_view) {
-              auto &bufferAccess = dof::GetDofs<CellDimension>(std::get<0>(local_view));
+              auto &bufferAccess = std::get<0>(local_view);
               bufferAccess[step] = step;
             }));
   };
