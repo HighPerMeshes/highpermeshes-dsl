@@ -23,10 +23,10 @@ using namespace HPM;
 //!
 class AccessDefinitionHelpers : public ::testing::Test
 {
-  public:
+public:
     UnitCube cube;
 
-    const decltype(cube.mesh)& mesh{cube.mesh};
+    const decltype(cube.mesh) &mesh{cube.mesh};
 
     Buffer<int, std::decay_t<decltype(cube.mesh)>, dataType::ConstexprArray<std::size_t, 1, 1, 1, 1, 0>, std::allocator<int>> field{mesh, {}, {}};
 
@@ -65,8 +65,8 @@ constexpr size_t NodeDim = 0;
 
 TEST_F(AccessDefinitionHelpers, Cell)
 {
-    dispatcher.Execute(ForEachEntity(mesh.GetEntityRange<CellDim>(), std::tuple(ReadWrite(Cell(field))), [](const auto&, const auto&, auto& lvs) {
-        auto& cell = dof::GetDofs<CellDim>(std::get<0>(lvs));
+    dispatcher.Execute(ForEachEntity(mesh.GetEntityRange<CellDim>(), std::tuple(ReadWrite(Cell(field))), [](const auto &, const auto &, auto &lvs) {
+        auto &cell = std::get<0>(lvs);
         cell[0] += 1;
     }));
 
@@ -77,8 +77,8 @@ TEST_F(AccessDefinitionHelpers, Cell)
 TEST_F(AccessDefinitionHelpers, Face)
 {
 
-    dispatcher.Execute(ForEachEntity(mesh.GetEntityRange<FaceDim>(), std::tuple(ReadWrite(Face(field))), [](const auto&, const auto&, auto& lvs) {
-        auto& face = dof::GetDofs<FaceDim>(std::get<0>(lvs));
+    dispatcher.Execute(ForEachEntity(mesh.GetEntityRange<FaceDim>(), std::tuple(ReadWrite(Face(field))), [](const auto &, const auto &, auto &lvs) {
+        auto &face = std::get<0>(lvs);
         face[0] += 1;
     }));
 
@@ -91,8 +91,8 @@ TEST_F(AccessDefinitionHelpers, Face)
 TEST_F(AccessDefinitionHelpers, Edge)
 {
 
-    dispatcher.Execute(ForEachEntity(mesh.GetEntityRange<EdgeDim>(), std::tuple(ReadWrite(Edge(field))), [](const auto&, const auto&, auto& lvs) {
-        auto& edge = dof::GetDofs<EdgeDim>(std::get<0>(lvs));
+    dispatcher.Execute(ForEachEntity(mesh.GetEntityRange<EdgeDim>(), std::tuple(ReadWrite(Edge(field))), [](const auto &, const auto &, auto &lvs) {
+        auto &edge = std::get<0>(lvs);
         edge[0] += 1;
     }));
 
@@ -105,8 +105,8 @@ TEST_F(AccessDefinitionHelpers, Edge)
 TEST_F(AccessDefinitionHelpers, Node)
 {
 
-    dispatcher.Execute(ForEachEntity(mesh.GetEntityRange<NodeDim>(), std::tuple(ReadWrite(Node(field))), [](const auto&, const auto&, auto& lvs) {
-        auto& node = dof::GetDofs<NodeDim>(std::get<0>(lvs));
+    dispatcher.Execute(ForEachEntity(mesh.GetEntityRange<NodeDim>(), std::tuple(ReadWrite(Node(field))), [](const auto &, const auto &, auto &lvs) {
+        auto &node = std::get<0>(lvs);
         node[0] += 1;
     }));
 
@@ -115,106 +115,40 @@ TEST_F(AccessDefinitionHelpers, Node)
     rangeEquals(from, field.GetSize(), 1);
 }
 
-TEST_F(AccessDefinitionHelpers, AllFromCell)
-{
-
-    dispatcher.Execute(ForEachEntity(mesh.GetEntityRange<CellDim>(), std::tuple(ReadWrite(All(field))),
-                                     [](const auto&, const auto&, auto& lvs) {
-                                         auto& cell = dof::GetDofs<CellDim>(std::get<0>(lvs));
-                                         cell[0] += 1;
-
-                                         auto& face = dof::GetDofs<FaceDim>(std::get<0>(lvs));
-                                         ForEach(4, [&](auto i) { face[i][0] += 1; });
-
-                                         auto& edge = dof::GetDofs<EdgeDim>(std::get<0>(lvs));
-                                         ForEach(6, [&](auto i) { edge[i][0] += 1; });
-
-                                         auto& node = dof::GetDofs<NodeDim>(std::get<0>(lvs));
-                                         ForEach(4, [&](auto i) { node[i][0] += 1; });
-                                     }),
-                       ForEachEntity(mesh.GetEntityRange<FaceDim>(), std::tuple{Read(Face(field))},
-                                     [](const auto& entity, const auto&, auto& lvs) {
-                                         auto containingCells = entity.GetTopology().GetIndicesOfAllContainingCells();
-
-                                         auto& face = dof::GetDofs<FaceDim>(std::get<0>(lvs));
-
-                                         // If the considered entity does not belong to the middle cell
-                                         if (containingCells.size() == 1)
-                                         {
-                                             EXPECT_EQ(face[0], 1);
-                                         }
-                                         else
-                                         {
-                                             EXPECT_EQ(face[0], 2);
-                                         }
-                                     }),
-                       ForEachEntity(mesh.GetEntityRange<EdgeDim>(), std::tuple{Read(Edge(field))},
-                                     [](const auto& entity, const auto&, auto& lvs) {
-                                         auto containingCells = entity.GetTopology().GetIndicesOfAllContainingCells();
-
-                                         auto& edge = dof::GetDofs<EdgeDim>(std::get<0>(lvs));
-
-                                         // If the considered entity does not belong to the middle cell
-                                         if (containingCells.size() == 1)
-                                         {
-                                             EXPECT_EQ(edge[0], 1);
-                                         }
-                                         else
-                                         {
-                                             EXPECT_EQ(edge[0], 3);
-                                         }
-                                     }),
-                       ForEachEntity(mesh.GetEntityRange<NodeDim>(), std::tuple{Read(Node(field))}, [](const auto& entity, const auto&, auto& lvs) {
-                           auto containingCells = entity.GetTopology().GetIndicesOfAllContainingCells();
-
-                           auto& node = dof::GetDofs<NodeDim>(std::get<0>(lvs));
-
-                           // If the considered entity does not belong to the middle cell
-                           if (containingCells.size() == 1)
-                           {
-                               EXPECT_EQ(node[0], 1);
-                           }
-                           else
-                           {
-                               EXPECT_EQ(node[0], 4);
-                           }
-                       }));
-}
-
 TEST_F(AccessDefinitionHelpers, NeighboringMeshElementOrSelf)
 {
 
     dispatcher.Execute(
         ForEachIncidence<FaceDim>(mesh.GetEntityRange<CellDim>(), std::tuple(ReadWrite(NeighboringMeshElementOrSelf(field))),
-                                                 [](const auto&, const auto&, const auto&, auto& lvs) {
-                                                     auto& cell = dof::GetDofs<CellDim>(std::get<0>(lvs));
+                                  [](const auto &, const auto &, const auto &, auto &lvs) {
+                                      auto &cell = std::get<0>(lvs);
 
-                                                     cell[0] += 1;
-                                                 })
-                    //                              ,
-                    //    ForEachEntity(mesh.GetEntityRange<CellDim>(), std::tuple(ReadWrite(Cell(field))), [](const auto&, const auto&, auto& lvs) {
-                    //        auto& cell = dof::GetDofs<CellDim>(std::get<0>(lvs));
+                                      cell[0] += 1;
+                                  })
+                                     ,
+           ForEachEntity(mesh.GetEntityRange<CellDim>(), std::tuple(ReadWrite(Cell(field))), [](const auto&, const auto&, auto& lvs) {
+               auto& cell = std::get<0>(lvs);
 
-                    //        // Must be 4.
-                    //        // First case: the face lies on a boundary, in which case NeighboringMeshElementOrSelf returns the cell itself.
-                    //        // Second case: Is neighboring the middle cell, gets incremented by one from the middle cell
-                    //        // Third case: Is inside the middle cell, gets incremented by one of the 4 boundary cells
-                    //        EXPECT_EQ(cell[0], 4);
-                    //    })
-                       );
+               // Must be 4.
+               // First case: the face lies on a boundary, in which case NeighboringMeshElementOrSelf returns the cell itself.
+               // Second case: Is neighboring the middle cell, gets incremented by one from the middle cell
+               // Third case: Is inside the middle cell, gets incremented by one of the 4 boundary cells
+               EXPECT_EQ(cell[0], 4);
+           })
+    );
 }
 
 TEST_F(AccessDefinitionHelpers, ContainingMeshElement)
 {
 
     dispatcher.Execute(ForEachIncidence<FaceDim>(mesh.GetEntityRange<CellDim>(), std::tuple(ReadWrite(ContainingMeshElement(field))),
-                                                 [](const auto&, const auto&, const auto&, auto& lvs) {
-                                                     auto& cell = dof::GetDofs<CellDim>(std::get<0>(lvs));
+                                                 [](const auto &, const auto &, const auto &, auto &lvs) {
+                                                     auto &cell = std::get<0>(lvs);
 
                                                      cell[0] += 1;
                                                  }),
-                       ForEachEntity(mesh.GetEntityRange<CellDim>(), std::tuple(ReadWrite(Cell(field))), [](const auto&, const auto&, auto& lvs) {
-                           auto& cell = dof::GetDofs<CellDim>(std::get<0>(lvs));
+                       ForEachEntity(mesh.GetEntityRange<CellDim>(), std::tuple(ReadWrite(Cell(field))), [](const auto &, const auto &, auto &lvs) {
+                           auto &cell = std::get<0>(lvs);
 
                            // Must be 4.
                            // ForEachIncidence iterates over each sub-entity, in this case faces, and faces are repeated

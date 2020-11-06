@@ -17,13 +17,7 @@
 #include <HighPerMeshes/auxiliary/ConstexprFor.hpp>
 #include <HighPerMeshes/dsl/buffers/LocalBuffer.hpp>
 #include <HighPerMeshes/dsl/data_access/Dof.hpp>
-#include <HighPerMeshes/dsl/data_access/LocalViewPlain.hpp>
 #include <HighPerMeshes/dsl/meta_programming/util/IsAccessDefinitions.hpp>
-
-namespace C
-{
-#include <HighPerMeshes/dsl/data_access/LocalViewPlain.h>
-}
 
 namespace HPM::internal
 {
@@ -51,68 +45,24 @@ namespace HPM::internal
         //! \param num_dofs the number of dofs in the dimension
         //! \return a `LocalBuffer` instance if the number of dofs requested is larger than zero, otherwise an `InvalidLocalBuffer` type
         //!
-        template <std::size_t Dimension, std::size_t NumDofs, typename EntityT, typename AccessDefinition>
-        static auto GetLocalBuffer(const AccessDefinition& access, const EntityT& entity, [[maybe_unused]] const std::size_t offset, [[maybe_unused]] const std::size_t num_dofs)
+        template <std::size_t Dimension, typename EntityT, typename AccessDefinition>
+        static auto GetLocalBuffer(const AccessDefinition& access, const EntityT& considered_entity, const std::size_t num_dofs, size_t offset)
         {
-            // Perform calculations only if 'NumDofs > 0'.
-            if constexpr (NumDofs > 0)
-            {
-                // The `LocalBuffer` type gets the compile-time `NumDofs` value for potential data transfer if a 'hard copy' of the dofs is requested.
-                using LocalBuffer = typename AccessDefinition::template LocalBuffer<NumDofs>;
+            // Request the (global) indices of all (sub-)entities of the specified `Dimension` (w.r.t. this entity).
+            // Apply to each index the given transformation: calculate the offset to the base pointer associated with this buffer and set up a `LocalBuffer` pointing to this position.
+            return TransformArray(considered_entity.GetTopology().template GetIndicesOfEntitiesWithDimension<Dimension>(), [&](const auto index) {
+                return LocalBuffer { access.buffer, access.Mode, offset + num_dofs * index };
+            });
 
-                // Get the considered entity.
-                const auto& considered_entity = access.pattern(entity);
-
-                // Request the (global) indices of all (sub-)entities of the specified `Dimension` (w.r.t. this entity).
-                // Apply to each index the given transformation: calculate the offset to the base pointer associated with this buffer and set up a `LocalBuffer` pointing to this position.
-                return TransformArray(considered_entity.GetTopology().template GetIndicesOfEntitiesWithDimension<Dimension>(), [&](const auto index) {
-                    if constexpr (AccessDefinition::BufferT::DofT::IsConstexprArray)
-                    {
-                        return LocalBuffer(access.buffer, offset + NumDofs * index);
-                    }
-                    else
-                    {
-                        // NumDofs is either 0 or 1: use the num_dofs argument to provide the actual dof-value to the `LocalBuffer`.
-                        assert(num_dofs > 0);
-
-                        return LocalBuffer(access.buffer, offset + num_dofs * index, num_dofs);
-                    }
-                });
-            }
-            else
-            {
-                return InvalidLocalBuffer{};
-            }
         }
 
         //!
         //! \brief Version of the `GetLocalBuffer` function for global dofs: no entity needed.
         //!
-        template <std::size_t NumDofs, typename AccessDefinition>
-        static auto GetLocalBuffer(const AccessDefinition& access, [[maybe_unused]] const std::size_t num_dofs)
+        template <typename AccessDefinition>
+        static auto GetLocalBuffer(const AccessDefinition& access, std::size_t num_dofs)
         {
-            using LocalBuffer = typename AccessDefinition::template LocalBuffer<NumDofs>;
-
-            if constexpr (NumDofs > 0)
-            {
-                if constexpr (AccessDefinition::BufferT::DofT::IsConstexprArray)
-                {
-                    // Global dofs are located always at the beginning of the buffer.
-                    return std::array<LocalBuffer, 1>{LocalBuffer(access.buffer, 0)};
-                }
-                else
-                {
-                    // NumDofs is either 0 or 1: use the num_dofs argument to provide the actual dof-value to the `LocalBuffer`.
-                    assert(num_dofs > 0);
-
-                    // Global dofs are located always at the beginning of the buffer.
-                    return std::array<LocalBuffer, 1>{LocalBuffer(access.buffer, 0, num_dofs)};
-                }
-            }
-            else
-            {
-                return InvalidLocalBuffer{};
-            }
+            return LocalBuffer { access.buffer, access.Mode, 0 };
         }
 
         //!
@@ -128,45 +78,37 @@ namespace HPM::internal
         //! \param unnamed used for template parameter deduction
         //! \return a tuple of `LocalBuffer` or `InvalidLocalBuffer` instances
         //!
-        template <typename AccessDefinition, typename EntityT, std::size_t... Dimension>
-        static auto CreateImplementation(const AccessDefinition& access, const EntityT& entity, std::index_sequence<Dimension...>)
+        template <typename AccessDefinition, typename EntityT>
+        static auto CreateImplementation(const AccessDefinition& access, const EntityT& entity)
         {
-            constexpr std::size_t CellDimension = EntityT::MeshT::CellDimension;
+            constexpr size_t CellDimension = EntityT::MeshT::CellDimension;
 
-            // Get the considered entity type.
-            using ConsideredElementT = std::decay_t<decltype(access.pattern(entity))>;
+            constexpr size_t RequestedDofDimension = AccessDefinition::RequestedDimension;
 
-            // Deduce the dof mask from the access pattern.
-            constexpr std::size_t DofMask[] = {(decltype(access.Dofs)::template At<Dimension>() && (Dimension <= ConsideredElementT::Dimension) ? 1 : 0)...};
-            constexpr std::size_t GlobalDofMask = (decltype(access.Dofs)::template At<CellDimension + 1>() ? 1 : 0);
+            const auto& dofs = access.buffer->GetDofs();
+            
+            // Get the considered entity.
+            const auto& considered_entity = access.pattern(entity);
+            constexpr size_t ConsideredDimension = std::decay_t<decltype(considered_entity)>::Dimension;
 
-            // Use compile time Dofs?
-            if constexpr (AccessDefinition::UseCompileTimeDofs)
-            {
-                // Extract the actual number of dofs from the `DofT` and the dof mask.
-                using DofT = typename AccessDefinition::BufferT::DofT;
-                constexpr std::size_t NumDofs[] = {DofT::template At<Dimension>() * DofMask[Dimension]...};
-                constexpr std::size_t NumGlobalDofs = DofT::template At<CellDimension + 1>() * GlobalDofMask;
+            assert(dofs[RequestedDofDimension] != 0);
 
-                // Get all `LocalBuffer`s or `InvalidLocalBuffer`s for this entity.
-                return std::tuple{GetLocalBuffer<Dimension, NumDofs[Dimension]>(access, entity, GetOffset<Dimension, DofT>(entity.GetMesh()), NumDofs[Dimension])...,
-                                    GetLocalBuffer<NumGlobalDofs>(access, NumGlobalDofs),
-                                    std::integral_constant<std::size_t, CellDimension>{}};
+            if constexpr(RequestedDofDimension == CellDimension + 1) {
+                return GetLocalBuffer(access, dofs.At(RequestedDofDimension));
             }
-            else
-            {
-                // Get the dofs from the access list element.
-                const auto& dofs = access.buffer->GetDofs();
-                const std::size_t num_dofs[] = {dofs.template At<Dimension>() * DofMask[Dimension]...};
-                const std::size_t num_global_dofs = dofs.template At<CellDimension + 1>() * GlobalDofMask;
-
-                // Get all `LocalBuffer`s or `InvalidLocalBuffer`s for this entity.
-                // If DofMask[] > 0 holds, num_dofs[] is used to access the actual dof-values.
-                return std::tuple{GetLocalBuffer<Dimension, DofMask[Dimension]>(access, entity, GetOffset<Dimension>(entity.GetMesh(), dofs), num_dofs[Dimension])...,
-                                    GetLocalBuffer<GlobalDofMask>(access, num_global_dofs),
-                                    std::integral_constant<std::size_t, CellDimension>{}};
+            else {
+                if constexpr(ConsideredDimension == RequestedDofDimension) {
+                    // In this case, there can only be one entity, therefore we can directly return the first entry to make life easier on the user side.
+                    return GetLocalBuffer<RequestedDofDimension>(access, considered_entity, dofs.At(RequestedDofDimension), GetOffset<RequestedDofDimension>(entity.GetMesh(), dofs))[0];
+                }
+                else {
+                    return GetLocalBuffer<RequestedDofDimension>(access, considered_entity, dofs.At(RequestedDofDimension), GetOffset<RequestedDofDimension>(entity.GetMesh(), dofs));
+                }
             }
         }
+
+        template<size_t... DofDimension> struct DimensionalityList {};
+
 
         //!
         //! \brief Implementation of the local view creation (processing of the entire access list).
@@ -183,10 +125,9 @@ namespace HPM::internal
         //!
         template <typename AccessDefinitions, typename EntityT, std::size_t... TupleIndex>
         static auto Create(const AccessDefinitions& access_definitions, const EntityT& entity, std::index_sequence<TupleIndex...>)
-            -> std::tuple<decltype(CreateImplementation(std::get<TupleIndex>(access_definitions), entity, std::make_index_sequence<EntityT::MeshT::CellDimension + 1>{}))...>
         {
             // Create the local view per access list element: for each access list element iterate over all dimensions up to the cell dimension.
-            return {CreateImplementation(std::get<TupleIndex>(access_definitions), entity, std::make_index_sequence<EntityT::MeshT::CellDimension + 1>{})...};
+            return std::tuple{CreateImplementation(std::get<TupleIndex>(access_definitions), entity)..., DimensionalityList<std::decay_t<decltype(std::get<TupleIndex>(access_definitions))>::RequestedDimension...> {} };
         }
 
         public:
@@ -216,25 +157,6 @@ namespace HPM::internal
             -> std::array<decltype(Create(access_definitions, it[0])), sizeof...(I)>
         {
             return {Create(access_definitions, it[I])...};
-        }
-
-        //!
-        //! \brief Create a local view to the dofs of some entity according to some access list.
-        //!
-        //! This function translates the `LocalBuffer` version of the local view into a plain data type which instead of the `LocalBuffers` stores offsets to some base pointer.
-        //!
-        //! \tparam AccessDefinitions the `AccessDefinitionDefinition` type for a collection of fields
-        //! \tparam EntityT the type of the considered entity
-        //! \param access_definitions the `AccessDefinitionDefinition` for a collection of fields
-        //! \param entity the considered entity
-        //! \return a tuple of tuples of `LocalBuffer` or `InvalidLocalBuffer` instances
-        //!
-        template <typename AccessDefinitions, typename EntityT>
-        static auto CreatePlain(const AccessDefinitions& access_definitions, const EntityT& entity)
-        {
-            using TupleT = decltype(Create(access_definitions, entity, std::make_index_sequence<std::tuple_size_v<AccessDefinitions>>{}));
-
-            return LocalViewPlain::Create<TupleT>(access_definitions, entity.GetMesh(), entity);
         }
     };
 } // namespace HPM::internal
