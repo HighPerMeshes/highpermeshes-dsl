@@ -68,7 +68,6 @@ auto RungeKutta(const Mesh& mesh, size_t iteration_mod)
                 assign_to_entries(rhsE[n], 0.0);
             });
         }
-        ,HPM::internal::OpenMP_ForEachEntity<3>{}
         );
 
     return HPM::auxiliary::MeasureTime(

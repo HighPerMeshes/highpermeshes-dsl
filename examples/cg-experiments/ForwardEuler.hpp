@@ -49,7 +49,6 @@ auto ForwardEuler(const Mesh& mesh, size_t iteration_mod)
 
             u[0] += tau * u_d[0];
         }
-        , HPM::internal::OpenMP_ForEachEntity<0>{}
         );
 
     return HPM::auxiliary::MeasureTime(

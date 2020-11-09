@@ -69,7 +69,6 @@ auto Volume(const Mesh& mesh, size_t iteration_mod)
                 rhsE[n] += Curl(D, derivative_H);
             });
         }
-        ,HPM::internal::OpenMP_ForEachEntity<3>{}
         );
 
     return HPM::auxiliary::MeasureTime(
