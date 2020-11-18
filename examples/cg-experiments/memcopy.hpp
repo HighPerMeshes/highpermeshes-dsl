@@ -1,55 +1,48 @@
+#ifndef MEMCOPY_HPP
+#define MEMCOPY_HPP
 #include <HighPerMeshes.hpp>
 
 #include <Grid.hpp>
 #include <HighPerMeshes/drts/UsingOpenCL.hpp>
 #include <HighPerMeshes/auxiliary/HelperFunctions.hpp>
 #include "help.hpp"
-#include "Volume.hpp"
 
 using namespace HPM;
 
-int main()
+template<typename T> struct DEBUG;
+
+template<typename Mesh>
+auto Memcopy(const Mesh& mesh, size_t iteration_mod)
 {
     //The runtime determines the configuration of HighPerMeshes.
     //The GetBuffer class determines that we use a normal buffer to allocate space
     drts::Runtime hpm{
         GetBuffer{}};
 
-    Grid<3> grid{{10, 10, 10}};
-    const auto& mesh = grid.mesh;
-
     // The next step initializes a mesh
     // For this purpose we define a mesh class that needs two types as information: A CoordinateType that tells us which dimensionality the mesh has and how to store the coordinates and a topology class that can be used to define the mesh topology, i.e. how nodes are connected to each other.
     // For this purpose we currently provide he Simplex class to define meshes for simplexes of any dimensionality
 
-    // The CoordinateType tells us which data type and which dimensionality to use for a given mesh.
-    using CoordinateType = dataType::Vec<double, 3>;
+    constexpr auto Dofs = dof::MakeDofs<1, 0, 0, 0, 0>();
 
-    static constexpr auto CellDimension = 3;
-
-    const auto AllCells{
-        mesh.template GetEntityRange<CellDimension>()};
-
-    constexpr auto Dofs = dof::MakeDofs<0, 0, 0, numVolNodes, 0>();
-
-    auto buffers = MakeTuple<4>(
+    auto buffers = MakeTuple<2>(
         [&](auto) {
-            return hpm.GetBuffer<CoordinateType>(mesh, Dofs);
+            return std::vector<double>(mesh.template GetNumEntities<0>() * Dofs.At<0>());
         });
-
-    SequentialDispatcher dispatcher;
-
-    using namespace HPM::dataType;
-
-    auto kernel = VolumeKernel(AllCells, buffers);
 
     return HPM::auxiliary::MeasureTime(
         [&]() {
-            dispatcher.Execute(
-                HPM::iterator::Range { size_t { 1 } },
-                kernel
-            );
+
+            for(size_t step = 0; step < iteration_mod; ++ step) {
+
+                #pragma omp parallel for
+                for(size_t i = 0; i < std::get<0>(buffers).size(); ++i) {
+                    std::get<0>(buffers)[i] = std::get<1>(buffers)[i];
+                }
+
+            }
+
         }
     ).count();
-
 }
+#endif /* FORWARDEULER_HPP */

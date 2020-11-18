@@ -4,6 +4,7 @@
 #include <utility>
 #include <tuple>
 #include <HighPerMeshes.hpp>
+#include <random>
 
 template <typename What, size_t... Indices>
 auto make_tuple_impl(What &&what, std::index_sequence<Indices...> /* not_used */)
@@ -21,6 +22,78 @@ using Real = double;
 using Real3 = HPM::dataType::Vec<double, 3>;
 using DerivativeBlock = std::array<Real3, 20>;
 using Derivative = std::array<DerivativeBlock, 20>;
+
+auto get_random_double() {
+    static std::random_device r;
+    static std::mt19937 gen(r());
+    static std::uniform_real_distribution<double> uniform(0.0, 1.0);
+    return uniform(gen);
+}
+
+void fill_random(HPM::dataType::Vec<double, 3>& vec) {
+    vec[0] = get_random_double();
+    vec[1] = get_random_double();
+    vec[2] = get_random_double();
+}
+ 
+void fill_random(std::vector<HPM::dataType::Vec<double, 3>>& vec) {
+    for(auto& value : vec) {
+        fill_random(value);
+    }
+}
+
+template<typename Mesh, typename Dof, typename Allocator>
+void fill_random(HPM::Buffer<HPM::dataType::Vec<double, 3>, Mesh, Dof, Allocator>& vec) {
+    for(auto& value : vec) {
+        fill_random(value);
+    }
+}
+
+void fill_random(std::vector<double>& vec) {
+    for(auto& value : vec) {
+        value = get_random_double();
+    }
+}
+
+template<typename Mesh, typename Dof, typename Allocator>
+void fill_random(HPM::Buffer<double, Mesh, Dof, Allocator>& vec) {
+    for(auto& value : vec) {
+        value = get_random_double();
+    }
+}
+
+void fill_ones(HPM::dataType::Vec<double, 3>& vec) {
+    vec[0] = 1.0;
+    vec[1] = 1.0;
+    vec[2] = 1.0;
+}
+ 
+void fill_ones(std::vector<HPM::dataType::Vec<double, 3>>& vec) {
+    for(auto& value : vec) {
+        fill_ones(value);
+    }
+}
+
+template<typename Mesh, typename Dof, typename Allocator>
+void fill_ones(HPM::Buffer<HPM::dataType::Vec<double, 3>, Mesh, Dof, Allocator>& vec) {
+    for(auto& value : vec) {
+        fill_ones(value);
+    }
+}
+
+void fill_ones(std::vector<double>& vec) {
+    for(auto& value : vec) {
+        value = 1.0;
+    }
+}
+
+template<typename Mesh, typename Dof, typename Allocator>
+void fill_ones(HPM::Buffer<double, Mesh, Dof, Allocator>& vec) {
+    for(auto& value : vec) {
+        value = 1.0;
+    }
+}
+
 
 constexpr auto numVolNodes = 20;
 

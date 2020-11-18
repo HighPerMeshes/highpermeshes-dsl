@@ -1,11 +1,10 @@
-#ifndef RUNGEKUTTA_HPP
-#define RUNGEKUTTA_HPP
 #include <HighPerMeshes.hpp>
 
 #include <Grid.hpp>
 #include <HighPerMeshes/drts/UsingOpenCL.hpp>
 #include <HighPerMeshes/auxiliary/HelperFunctions.hpp>
 #include "help.hpp"
+#include "RungeKutta.hpp"
 
 using namespace HPM;
 
@@ -42,35 +41,7 @@ int main()
 
     using namespace HPM::dataType;
 
-    auto kernel = HPM::ForEachEntity(
-        AllCells,
-        std::tuple(
-            Write(Cell(std::get<0>(buffers))),
-            Write(Cell(std::get<1>(buffers))),
-            Cell(std::get<2>(buffers)),
-            Cell(std::get<3>(buffers)),
-            Cell(std::get<4>(buffers)),
-            Cell(std::get<5>(buffers))),
-        [&](const auto &, const auto &iter, auto lvs) {
-            const auto &RKstage = rk4[iter % 5];
-
-            auto &fieldH = std::get<0>(lvs);
-            auto &fieldE = std::get<1>(lvs);
-            auto &rhsH = std::get<2>(lvs);
-            auto &rhsE = std::get<3>(lvs);
-            auto &resH = std::get<4>(lvs);
-            auto &resE = std::get<5>(lvs);
-
-            HPM::ForEach(numVolNodes, [&](const std::size_t n) {
-                resH[n] = RKstage[0] * resH[n] + /* timeStep * */ rhsH[n]; //!< residual fields
-                resE[n] = RKstage[0] * resE[n] + /* timeStep * */ rhsE[n];
-                fieldH[n] += RKstage[1] * resH[n]; //!< updated fields
-                fieldE[n] += RKstage[1] * resE[n];
-                assign_to_entries(rhsH[n], 0.0);
-                assign_to_entries(rhsE[n], 0.0);
-            });
-        },
-        HPM::internal::OpenMP_ForEachEntity<3>{});
+    auto kernel = RKKernel(AllCells, buffers);
 
     return HPM::auxiliary::MeasureTime(
                [&]() {
@@ -80,4 +51,3 @@ int main()
                })
         .count();
 }
-#endif /* RUNGEKUTTA_HPP */

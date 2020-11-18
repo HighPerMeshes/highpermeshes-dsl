@@ -243,10 +243,10 @@ namespace HPM
                 default_queue.enqueueMapSVM((void *)buffer.data(), CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, sizeof(T) * buffer.size());
         }
 
-        ProfCL EnqueueKernel(kernel_name_type kernelName, size_t global_wi = 1)
+        ProfCL EnqueueKernel(kernel_name_type kernelName, size_t global_wi, size_t local_wi)
         {
             cl::Event kernel_event;
-            default_queue.enqueueNDRangeKernel(kernels.at(kernelName), cl::NullRange, cl::NDRange(global_wi), cl::NDRange(1), NULL, &kernel_event);
+            default_queue.enqueueNDRangeKernel(kernels.at(kernelName), cl::NullRange, cl::NDRange(global_wi), cl::NDRange(local_wi), NULL, &kernel_event);
             return ProfCL(default_queue, kernel_event);
         }
     };
@@ -288,13 +288,14 @@ namespace HPM
         void Unmap(NOP_T /* not_used */) {}
 
     public:
-        OpenCLKernelEnqueuer(OpenCLHandler &_ocl, OpenCLHandler::kernel_name_type _kernelName, KernelArgs _ka, size_t _wi_global_size = 1)
-            : ocl(_ocl), kernelName(_kernelName), kernel_arguments(_ka), wi_global_size(_wi_global_size){};
+        OpenCLKernelEnqueuer(OpenCLHandler &_ocl, OpenCLHandler::kernel_name_type _kernelName, KernelArgs _ka, size_t _wi_global_size, size_t local_wi)
+            : ocl(_ocl), kernelName(_kernelName), kernel_arguments(_ka), wi_global_size(_wi_global_size), local_wi { local_wi } {};
 
         OpenCLHandler &ocl;
         OpenCLHandler::kernel_name_type kernelName;
         KernelArgs kernel_arguments;
         size_t wi_global_size;
+        size_t local_wi;
 
         void unmap()
         {
@@ -304,7 +305,7 @@ namespace HPM
         ProfCL enqueue()
         {
             std::apply([this](auto &&... arg) { size_t arg_id(0); ((ocl.SetKernelArg(kernelName, arg_id++, arg)), ...); }, kernel_arguments);
-            return ocl.EnqueueKernel(kernelName, wi_global_size);
+            return ocl.EnqueueKernel(kernelName, wi_global_size, local_wi);
         };
 
         void map()
@@ -320,7 +321,7 @@ namespace HPM
         template <typename... AdditionalArgs>
         OpenCLKernelEnqueuer<KernelArg..., AdditionalArgs...> with(std::tuple<AdditionalArgs...> additional_args)
         {
-            return {ocl, kernelName, std::tuple_cat(kernel_arguments, std::move(additional_args)), wi_global_size};
+            return {ocl, kernelName, std::tuple_cat(kernel_arguments, std::move(additional_args)), wi_global_size, local_wi };
         }
 
     };

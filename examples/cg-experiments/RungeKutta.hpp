@@ -9,39 +9,13 @@
 
 using namespace HPM;
 
-template<typename Mesh>
-auto RungeKutta(const Mesh& mesh, size_t iteration_mod)
+template <typename Range, typename Buffers>
+auto RKKernel(Range &range, Buffers &buffers)
 {
-    //The runtime determines the configuration of HighPerMeshes.
-    //The GetBuffer class determines that we use a normal buffer to allocate space
-    drts::Runtime hpm{
-        GetBuffer{}};
-
-    // The next step initializes a mesh
-    // For this purpose we define a mesh class that needs two types as information: A CoordinateType that tells us which dimensionality the mesh has and how to store the coordinates and a topology class that can be used to define the mesh topology, i.e. how nodes are connected to each other.
-    // For this purpose we currently provide he Simplex class to define meshes for simplexes of any dimensionality
-
-    // The CoordinateType tells us which data type and which dimensionality to use for a given mesh.
-    using CoordinateType = dataType::Vec<double, 3>;
-
-    static constexpr auto CellDimension = 3;
-
-    const auto AllCells{
-        mesh.template GetEntityRange<CellDimension>()};
-
-    constexpr auto Dofs = dof::MakeDofs<0, 0, 0, numVolNodes, 0>();
-
-    auto buffers = MakeTuple<6>(
-        [&](auto) {
-            return hpm.GetBuffer<CoordinateType>(mesh, Dofs);
-        });
-
-    SequentialDispatcher dispatcher;
-
     using namespace HPM::dataType;
 
-    auto kernel = HPM::ForEachEntity(
-        AllCells,
+    return HPM::ForEachEntity(
+        range,
         std::tuple(
             Write(Cell(std::get<0>(buffers))),
             Write(Cell(std::get<1>(buffers))),
@@ -67,8 +41,25 @@ auto RungeKutta(const Mesh& mesh, size_t iteration_mod)
                 assign_to_entries(rhsH[n], 0.0);
                 assign_to_entries(rhsE[n], 0.0);
             });
-        }
+        },
+        HPM::internal::OpenMP_ForEachEntity<3> {}
         );
+}
+
+template<typename Mesh, typename Buffers>
+auto RungeKutta(const Mesh& mesh, size_t iteration_mod, Buffers& buffers)
+{
+    static constexpr auto CellDimension = 3;
+
+    const auto AllCells{
+        mesh.template GetEntityRange<CellDimension>()};
+
+
+    SequentialDispatcher dispatcher;
+
+    using namespace HPM::dataType;
+
+    auto kernel = RKKernel(AllCells, buffers);
 
     return HPM::auxiliary::MeasureTime(
         [&]() {
