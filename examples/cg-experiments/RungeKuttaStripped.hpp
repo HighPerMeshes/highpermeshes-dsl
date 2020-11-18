@@ -42,6 +42,8 @@ auto RungeKuttaStripped(const Mesh& mesh, size_t iteration_mod)
         [&]() {
             
             for(size_t iter; iter < iteration_mod; ++iter) {
+
+                #pragma omp parallel for
                 for(size_t cell = 0; cell < mesh.template GetNumEntities<3>(); ++cell) {
                     const auto &RKstage = rk4[iter % 5];
 
