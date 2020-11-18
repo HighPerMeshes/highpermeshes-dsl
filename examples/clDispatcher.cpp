@@ -119,7 +119,7 @@ int main()
     auto kernel_args = std::tie(buffer_opencl_0, buffer_opencl_1, size, step, buffer_opencl_1, buffer_opencl_0);//, buffer_opencl, buffer_opencl, buffer_opencl, buffer_opencl);
     size_t wi_global_size = 2;
 
-    auto kern_obj = HPM::OpenCLKernelEnqueuer { _ocl,"kernel_0", kernel_args, wi_global_size };    
+    auto kern_obj = HPM::OpenCLKernelEnqueuer { _ocl,"kernel_0", kernel_args, wi_global_size, 1 };    
 
     HPM::OpenCLDispatcher opencl_dispatcher;
     opencl_dispatcher.Execute(kern_obj, kern_obj);

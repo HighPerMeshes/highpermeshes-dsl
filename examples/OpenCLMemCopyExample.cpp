@@ -96,7 +96,7 @@ int main()
     _ocl.UnmapSVMBuffer(buffer_out);
     _ocl.UnmapSVMBuffer(buffer_in);
 
-    ProfCL prof = _ocl.EnqueueKernel("memcopy");
+    ProfCL prof = _ocl.EnqueueKernel("memcopy", 1, 1);
 
     _ocl.MapSVMBuffer(buffer_out);
     _ocl.MapSVMBuffer(buffer_in);
