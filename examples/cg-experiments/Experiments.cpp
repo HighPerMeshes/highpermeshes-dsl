@@ -92,10 +92,10 @@ int main(int argc, char **argv)
 
     HPM::drts::Runtime ocl_runtime{HPM::GetBuffer<HPM::OpenCLHandler::SVMAllocator>{}};
 
-    size_t mesh_mod = 10;
-    size_t iteration_mod = 1000;
+    size_t mesh_mod = 1;
+    size_t iteration_mod = 1;
 
-    Grid<3> grid{{10 * mesh_mod, 10, 10}};
+    Grid<3> grid{{10 * mesh_mod, 2, 2}};
     const auto &mesh = grid.mesh;
 
     std::cout << "Tetrahedras: " << mesh.template GetNumEntities<3>() << "\nIterations: " << iteration_mod << "\n";
@@ -155,41 +155,38 @@ int main(int argc, char **argv)
             RungeKuttaOCL(mesh, iteration_mod, hpm_ocl, ocl_buffers),
             iteration_mod);
 
-        // inequalities(buffers, ocl_buffers);
+        inequalities(buffers, ocl_buffers);
 
         std::cout << "}\n";
     }
 
-    // {
-    //     using CoordinateType = dataType::Vec<double, 3>;
+    {
+        using CoordinateType = dataType::Vec<double, 3>;
 
-    //     constexpr auto Dofs = dof::MakeDofs<0, 0, 0, numVolNodes, 0>();
+        constexpr auto Dofs = dof::MakeDofs<0, 0, 0, numVolNodes, 0>();
 
-    //     auto buffers = MakeTuple<4>(
-    //         [&](auto) {
-    //             auto buffer = runtime.GetBuffer<CoordinateType>(mesh, Dofs);
-    //             fill_ones(buffer);
-    //             return buffer;
-    //         });
+        auto buffers = MakeTuple<4>(
+            [&](auto) {
+                auto buffer = runtime.GetBuffer<CoordinateType>(mesh, Dofs);
+                fill_ones(buffer);
+                return buffer;
+            });
 
-    //     auto ocl_buffers = MakeTuple<4>(
-    //         [&](auto) {
-    //             return ocl_runtime.GetBuffer<CoordinateType>(mesh, Dofs, hpm_ocl.GetSVMAllocator<CoordinateType>());
-    //         });
+        auto ocl_buffers = MakeTuple<4>(
+            [&](auto) {
+                return ocl_runtime.GetBuffer<CoordinateType>(mesh, Dofs, hpm_ocl.GetSVMAllocator<CoordinateType>());
+            });
 
-    //     assign_all(ocl_buffers, buffers);
+        assign_all(ocl_buffers, buffers);
 
-    //     std::cout << "Volume: {\n";
+        std::cout << "Volume: {\n";
 
-    //     VolumeOCL(mesh, iteration_mod, hpm_ocl, ocl_buffers),
+        analyze(
+            Volume(mesh, iteration_mod, buffers),
+            VolumeOCL(mesh, iteration_mod, hpm_ocl, ocl_buffers),
+            iteration_mod);
 
-
-    //     // analyze(
-    //     //     Volume(mesh, iteration_mod, buffers),
-    //     //     VolumeOCL(mesh, iteration_mod, hpm_ocl, ocl_buffers),
-    //     //     iteration_mod);
-
-    //     inequalities(ocl_buffers, buffers);
-    //     std::cout << "}\n";
-    // }
+        inequalities(ocl_buffers, buffers);
+        std::cout << "}\n";
+    }
 }

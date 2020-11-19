@@ -16,7 +16,7 @@ int main()
         GetBuffer{}};
 
     Grid<3> grid{{10, 10, 10}};
-    const auto& mesh = grid.mesh;
+    const auto &mesh = grid.mesh;
 
     // The next step initializes a mesh
     // For this purpose we define a mesh class that needs two types as information: A CoordinateType that tells us which dimensionality the mesh has and how to store the coordinates and a topology class that can be used to define the mesh topology, i.e. how nodes are connected to each other.
@@ -32,7 +32,7 @@ int main()
 
     constexpr auto Dofs = dof::MakeDofs<0, 0, 0, numVolNodes, 0>();
 
-    auto buffers = MakeTuple<4>(
+    auto buffers = MakeTuple<6>(
         [&](auto) {
             return hpm.GetBuffer<CoordinateType>(mesh, Dofs);
         });
@@ -44,12 +44,10 @@ int main()
     auto kernel = VolumeKernel(AllCells, buffers);
 
     return HPM::auxiliary::MeasureTime(
-        [&]() {
-            dispatcher.Execute(
-                HPM::iterator::Range { size_t { 1 } },
-                kernel
-            );
-        }
-    ).count();
-
+               [&]() {
+                   dispatcher.Execute(
+                       HPM::iterator::Range{ size_t { 1 } },
+                       kernel);
+               })
+        .count();
 }

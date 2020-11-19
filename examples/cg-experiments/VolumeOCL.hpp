@@ -17,7 +17,7 @@ auto VolumeOCL(const Mesh &mesh, size_t iteration_mod, HPM::OpenCLHandler &hpm_o
     std::fstream hpm_kernel_stream{"Volume.cl"};
     std::string hpm_kernel_string((std::istreambuf_iterator<char>(hpm_kernel_stream)), std::istreambuf_iterator<char>());
 
-    hpm_ocl.LoadKernelsFromString(hpm_kernel_string, {"function_2"});
+    hpm_ocl.LoadKernelsFromString(hpm_kernel_string, {"function_63"});
 
     const auto AllCells{
         mesh.template GetEntityRange<3>()};
@@ -32,7 +32,7 @@ auto VolumeOCL(const Mesh &mesh, size_t iteration_mod, HPM::OpenCLHandler &hpm_o
                        auto hpm_kernel_0 = kernel;
                        auto buffers_0 = GetBuffers(hpm_kernel_0);
                        auto offsets_0 = GetOffsets(hpm_kernel_0);
-                       auto hpm_ocl_kernel_0 = HPM::OpenCLKernelEnqueuer{hpm_ocl, "function_2", std::tuple<unsigned long>{0}, hpm_kernel_0.entity_range.GetSize(), 1}.with(buffers_0).with(offsets_0); //.with(std::tuple{GetInverseJacobian(hpm_kernel_0.entity_range)});
+                       auto hpm_ocl_kernel_0 = HPM::OpenCLKernelEnqueuer{hpm_ocl, "function_63", std::tuple<unsigned long>{0}, hpm_kernel_0.entity_range.GetSize(), 1}.with(buffers_0).with(offsets_0).with(std::tuple{GetInverseJacobian(hpm_kernel_0.entity_range, hpm_ocl)});
                        
                        HPM::OpenCLDispatcher{}.Dispatch(HPM::iterator::Range{size_t{iteration_mod}}, hpm_ocl_kernel_0);
 

@@ -5,9 +5,9 @@
 #include <tuple>
 #include <HighPerMeshes.hpp>
 
-template<typename Range, typename Op> auto MakeBuffer(const Range& range, Op op) {
-    using Type = decltype(op(*(range.GetEntities().begin())));
-    std::vector<Type> res;
+template<typename Range, typename Op, typename Allocator> auto MakeBuffer(const Range& range, Op op, Allocator& allocator) {
+    using Type = std::decay_t< decltype(op(*(range.GetEntities().begin()))) >;
+    std::vector<Type, std::decay_t<Allocator>> res(allocator);
 
     for(const auto& entity : range.GetEntities()) {
         res.emplace_back(op(entity));
@@ -15,10 +15,14 @@ template<typename Range, typename Op> auto MakeBuffer(const Range& range, Op op)
 
     return res; 
 }
+template<typename T> struct DEBUG;
 
-template<typename Range>
-auto GetInverseJacobian(const Range& range) {
-    return MakeBuffer(range, [](const auto& e) { return e.GetGeometry().GetInverseJacobian(); });
+template<typename Range, typename Runtime>
+auto GetInverseJacobian(const Range& range, Runtime& runtime) {
+
+    using Type = std::decay_t< decltype( (*(range.GetEntities().begin())).GetGeometry().GetInverseJacobian() ) >;
+    
+    return MakeBuffer(range, [](const auto& e) { return e.GetGeometry().GetInverseJacobian(); }, runtime.template GetSVMAllocator<Type>() );
 }
 
 template<typename MeshLoop>
