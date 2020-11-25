@@ -4,7 +4,9 @@
 #include <utility>
 #include <tuple>
 #include <HighPerMeshes.hpp>
+#include <HighPerMeshes/drts/UsingOpenCL.hpp>
 #include <random>
+#include "Grid.hpp"
 
 template <typename What, size_t... Indices>
 auto make_tuple_impl(What &&what, std::index_sequence<Indices...> /* not_used */)
@@ -102,7 +104,180 @@ void fill_scalar(HPM::Buffer<T, Mesh, Dof, Allocator>& vec, T scalar) {
     }
 }
 
-using BaseType = cl_double;
+template <typename BufferA, typename BufferB>
+void assign(BufferA &a, const BufferB &b)
+{
+#pragma omp parallel for
+    for (size_t i = 0; i < a.GetSize(); ++i)
+    {
+        a[i] = b[i];
+    }
+}
+
+template <typename Buffer>
+void print(Buffer &buffer)
+{
+    std::cout << "{\n\t";
+    for (const auto &v : buffer)
+    {
+        std::cout << v << " ";
+    }
+    std::cout << "\n}\n";
+}
+
+template <typename T>
+auto compare_epsilon(T lhs, T rhs, T epsilon)
+{
+    return std::abs(lhs - rhs) < epsilon;
+}
+
+template <typename T>
+auto compare_epsilon(HPM::dataType::Vec<T, 3> lhs, HPM::dataType::Vec<T, 3> rhs, double epsilon)
+{
+    auto res = lhs - rhs;
+
+    return std::abs(res[0]) < epsilon && std::abs(res[1]) < epsilon && std::abs(res[2]) < epsilon;
+}
+
+template <typename T>
+auto max_error(T current, T rhs)
+{
+    return std::max(current, std::abs(rhs));
+}
+
+template <typename T>
+auto max_error(HPM::dataType::Vec<T, 3> current, HPM::dataType::Vec<T, 3> rhs)
+{
+    return HPM::dataType::Vec<T, 3>{
+        std::max(current[0], std::abs(rhs[0])),
+        std::max(current[1], std::abs(rhs[1])),
+        std::max(current[2], std::abs(rhs[2]))};
+}
+
+template <typename BufferA, typename BufferB>
+auto find_inequalities(const BufferA &a, const BufferB &b, double epsilon)
+{
+
+    struct Result
+    {
+        std::vector<size_t> differences;
+        typename BufferA::ValueT max_error{};
+    } result;
+
+    for (size_t i = 0; i < a.GetSize(); ++i)
+    {
+        if (!compare_epsilon(a[i], b[i], epsilon))
+        {
+            result.differences.push_back(i);
+        }
+
+        result.max_error = max_error(result.max_error, a[i] - b[i]);
+    }
+
+    return result;
+}
+
+template <typename BufferA, typename BufferB>
+auto print_inequalities(const std::vector<size_t> &inequalities, const BufferA &a, const BufferB &b)
+{
+    for (const auto &i : inequalities)
+    {
+        std::cout << "\t\t\tindex: " << i << ", a[i]: " << a[i] << ", b[i]:" << b[i] << ", difference: " << a[i] - b[i] << "\n";
+    }
+}
+
+template <typename BuffersA, typename BuffersB>
+auto assign_all(BuffersA &buffersA, const BuffersB &buffersB)
+{
+    HPM::auxiliary::ConstexprFor<std::tuple_size_v<std::decay_t<decltype(buffersA)>>>([&](auto index) {
+        constexpr auto i = decltype(index)::value;
+        assign(std::get<i>(buffersA), std::get<i>(buffersB));
+    });
+}
+
+template <
+    size_t Size,
+    typename Datatype,
+    typename Mesh,
+    typename Dofs,
+    typename SeqRuntime,
+    typename OClRuntime>
+auto PrepareBuffers(
+    const Mesh &mesh,
+    const Dofs &dofs,
+    SeqRuntime &seq_runtime,
+    OClRuntime &ocl_runtime,
+    HPM::OpenCLHandler &ocl_handler)
+{
+
+    std::tuple result {
+        MakeTuple<Size>(
+        [&](auto) {
+            auto buffer = seq_runtime.template GetBuffer<Datatype>(mesh, dofs);
+            fill_scalar(buffer, 10.0);
+            return buffer;
+        }),
+        MakeTuple<Size>(
+        [&](auto) {
+            return ocl_runtime.template GetBuffer<Datatype>(mesh, dofs, ocl_handler.GetSVMAllocator<Datatype>());
+        })
+    };
+
+    assign_all(std::get<1>(result), std::get<0>(result));
+
+    return result;
+}
+
+auto analyze(double seq_result, double par_result, size_t iteration_mod)
+{
+    double seq_time = static_cast<double>(seq_result);
+    double par_time = static_cast<double>(par_result);
+
+    std::cout << "\tSequential Time = " << seq_result << " ns, Avgerage = " << seq_time / iteration_mod << " ns \n"
+              << "\tParallel Time = " << par_time << " ns, Average = " << par_time / iteration_mod << " ns \n"
+              << "\tSpeedup: " << seq_time / par_time << "\n";
+}
+
+template <typename BuffersA, typename BuffersB>
+auto inequalities(const BuffersA &buffersA, const BuffersB &buffersB)
+{
+    std::cout << "\tinequalities: {\n";
+    HPM::auxiliary::ConstexprFor<std::tuple_size_v<std::decay_t<decltype(buffersA)>>>([&](auto index) {
+        constexpr auto i = decltype(index)::value;
+        std::cout << "\t\tBuffer " << i << ":\n\t\t{\n";
+        auto ineqs = find_inequalities(std::get<i>(buffersA), std::get<i>(buffersB), 1.0E-12);
+        print_inequalities(ineqs.differences, std::get<i>(buffersA), std::get<i>(buffersB));
+        std::cout << "max error: " << ineqs.max_error << "\n";
+        std::cout << "\t\t}\n";
+    });
+    std::cout << "\t}\n";
+}
+
+auto PrepareRuntimes(size_t mesh_mod, size_t iteration_mod, size_t work_group_size) {
+    
+    const HPM::auxiliary::ConfigParser hpm_config_parser("config.cfg");
+    const std::string hpm_ocl_platform_name = hpm_config_parser.GetValue<std::string>("oclPlatformName");
+    const std::string hpm_ocl_device_name = hpm_config_parser.GetValue<std::string>("oclDeviceName");
+    
+    using namespace HPM;
+
+
+    std::tuple result {
+        drts::Runtime { GetBuffer{} },
+        HPM::drts::Runtime {HPM::GetBuffer<HPM::OpenCLHandler::SVMAllocator>{}},
+        HPM::OpenCLHandler (hpm_ocl_platform_name, hpm_ocl_device_name),
+        Grid<3> {{10 * mesh_mod, 10, 10}}
+    };
+
+
+    std::cout << "Tetrahedras: " << std::get<3>(result).mesh.template GetNumEntities<3>() << "\nIterations: " << iteration_mod << "\n";
+    std::cout << "work_group_size: " << work_group_size << "\n";
+
+    return result;
+}
+
+
+using BaseType = double;
 
 using CoordinateType = HPM::dataType::Vec<BaseType, 3>;
 

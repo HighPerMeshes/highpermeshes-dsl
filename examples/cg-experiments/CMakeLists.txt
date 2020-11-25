@@ -27,9 +27,16 @@ Experiment(ForwardEuler)
 Experiment(RungeKutta)
 Experiment(Volume)
 
+Experiment(ExperimentForwardEuler)
+Experiment(ExperimentInitialization)
+Experiment(ExperimentRKHandWrittenOCL)
+Experiment(ExperimentRKStripped)
+Experiment(ExperimentRungeKutta)
+Experiment(ExperimentVolume)
+
+
 configure_file(ForwardEuler.cl ForwardEuler.cl COPYONLY)
 configure_file(RungeKutta.cl RungeKutta.cl COPYONLY)
 configure_file(Volume.cl Volume.cl COPYONLY)
 configure_file(memcopy.cl memcopy.cl COPYONLY)
-configure_file(RungeKuttaVolume.cl RungeKuttaVolume.cl COPYONLY)
 configure_file(id_assign.cl id_assign.cl COPYONLY)
