@@ -25,21 +25,27 @@ auto VolumeKernel(Range &range, Buffers &buffers)
         [&](const auto &element, const auto &, auto &lvs) {
             const Mat3D &D = element.GetGeometry().GetInverseJacobian() * 2.0;
 
+            const auto &fieldH = std::get<0>(lvs);
+            const auto &fieldE = std::get<1>(lvs);
+
+            auto &rhsH = std::get<2>(lvs);
+            auto &rhsE = std::get<3>(lvs);
+
+
             HPM::ForEach(numVolNodes, [&](const std::size_t n) {
                 Mat3D derivative_E;
                 Mat3D derivative_H; //!< derivative of fields w.r.t reference coordinates
 
-                const auto &fieldH = std::get<0>(lvs);
-                const auto &fieldE = std::get<1>(lvs);
-
+                
                 HPM::ForEach(numVolNodes, [&](const std::size_t m) {
                     derivative_H += DyadicProduct(derivative[n][m], fieldH[m]);
                     derivative_E += DyadicProduct(derivative[n][m], fieldE[m]);
+
+                    rhsH[n] += derivative_H[0];
+
                 });
 
-                auto &rhsH = std::get<2>(lvs);
-                auto &rhsE = std::get<3>(lvs);
-
+                rhsH[n] += D[0];
                 rhsH[n] += -Curl(D, derivative_E); //!< first half of right-hand-side of fields
                 rhsE[n] += Curl(D, derivative_H);
             });

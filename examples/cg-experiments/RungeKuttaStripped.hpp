@@ -9,8 +9,8 @@
 
 using namespace HPM;
 
-template<typename Mesh>
-auto RungeKuttaStripped(const Mesh& mesh, size_t iteration_mod)
+template<typename Mesh, typename Buffers>
+auto RungeKuttaStripped(const Mesh& mesh, size_t iteration_mod, Buffers &buffers)
 {
     //The runtime determines the configuration of HighPerMeshes.
     //The GetBuffer class determines that we use a normal buffer to allocate space
@@ -28,15 +28,6 @@ auto RungeKuttaStripped(const Mesh& mesh, size_t iteration_mod)
 
     const auto AllCells{
         mesh.template GetEntityRange<CellDimension>()};
-
-    constexpr auto Dofs = dof::MakeDofs<0, 0, 0, numVolNodes, 0>();
-
-    auto buffers = MakeTuple<6>(
-        [&](auto) {
-            return std::vector<CoordinateType>(
-                mesh.template GetNumEntities<3>() * 20
-            ); 
-        });
 
     auto measured = HPM::auxiliary::MeasureTime(
         [&]() {
@@ -56,7 +47,7 @@ auto RungeKuttaStripped(const Mesh& mesh, size_t iteration_mod)
 
                     HPM::ForEach(numVolNodes, [&](const std::size_t n_) {
                         
-                        size_t n = n_ + 20 * cell;
+                        size_t n = n_ + numVolNodes * cell;
 
                         resH[n] = RKstage[0] * resH[n] + /* timeStep * */ rhsH[n]; //!< residual fields
                         resE[n] = RKstage[0] * resE[n] + /* timeStep * */ rhsE[n];

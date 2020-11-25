@@ -23,86 +23,97 @@ using Real3 = HPM::dataType::Vec<double, 3>;
 using DerivativeBlock = std::array<Real3, 20>;
 using Derivative = std::array<DerivativeBlock, 20>;
 
-auto get_random_double() {
+template<typename T>
+auto get_random(T max) {
     static std::random_device r;
     static std::mt19937 gen(r());
-    static std::uniform_real_distribution<double> uniform(0.0, 1.0);
+    static std::uniform_real_distribution<T> uniform(0.0, max);
     return uniform(gen);
 }
 
-void fill_random(HPM::dataType::Vec<double, 3>& vec) {
-    vec[0] = get_random_double();
-    vec[1] = get_random_double();
-    vec[2] = get_random_double();
+template<typename T>
+void fill_random(HPM::dataType::Vec<T, 3>& vec, T max) {
+    vec[0] = get_random(max);
+    vec[1] = get_random(max);
+    vec[2] = get_random(max);
 }
  
-void fill_random(std::vector<HPM::dataType::Vec<double, 3>>& vec) {
+template<typename T>
+void fill_random(std::vector<HPM::dataType::Vec<T, 3>>& vec, T max) {
     for(auto& value : vec) {
-        fill_random(value);
+        fill_random(value, max);
     }
 }
 
-template<typename Mesh, typename Dof, typename Allocator>
-void fill_random(HPM::Buffer<HPM::dataType::Vec<double, 3>, Mesh, Dof, Allocator>& vec) {
+template<typename Mesh, typename Dof, typename Allocator, typename T>
+void fill_random(HPM::Buffer<HPM::dataType::Vec<T, 3>, Mesh, Dof, Allocator>& vec, T max) {
     for(auto& value : vec) {
-        fill_random(value);
+        fill_random(value, max);
     }
 }
 
-void fill_random(std::vector<double>& vec) {
+template<typename T>
+void fill_random(std::vector<T>& vec, T max) {
     for(auto& value : vec) {
-        value = get_random_double();
+        value = get_random(max);
     }
 }
 
-template<typename Mesh, typename Dof, typename Allocator>
-void fill_random(HPM::Buffer<double, Mesh, Dof, Allocator>& vec) {
+template<typename Mesh, typename Dof, typename Allocator, typename T>
+void fill_random(HPM::Buffer<T, Mesh, Dof, Allocator>& vec, T max) {
     for(auto& value : vec) {
-        value = get_random_double();
+        value = get_random(max);
     }
 }
 
-void fill_ones(HPM::dataType::Vec<double, 3>& vec) {
-    vec[0] = 1.0;
-    vec[1] = 1.0;
-    vec[2] = 1.0;
+template<typename T>
+void fill_scalar(HPM::dataType::Vec<T, 3>& vec, T scalar) {
+    vec[0] = scalar;
+    vec[1] = scalar;
+    vec[2] = scalar;
 }
- 
-void fill_ones(std::vector<HPM::dataType::Vec<double, 3>>& vec) {
+
+
+template<typename T>
+void fill_scalar(std::vector<HPM::dataType::Vec<T, 3>>& vec, T scalar) {
     for(auto& value : vec) {
-        fill_ones(value);
+        fill_scalar(value, scalar);
     }
 }
 
-template<typename Mesh, typename Dof, typename Allocator>
-void fill_ones(HPM::Buffer<HPM::dataType::Vec<double, 3>, Mesh, Dof, Allocator>& vec) {
+template<typename Mesh, typename Dof, typename Allocator, typename T>
+void fill_scalar(HPM::Buffer<HPM::dataType::Vec<T, 3>, Mesh, Dof, Allocator>& vec, T scalar) {
     for(auto& value : vec) {
-        fill_ones(value);
+        fill_scalar(value, scalar);
     }
 }
 
-void fill_ones(std::vector<double>& vec) {
+template<typename T>
+void fill_scalar(std::vector<T>& vec, T scalar) {
     for(auto& value : vec) {
-        value = 1.0;
+        value = scalar;
     }
 }
 
-template<typename Mesh, typename Dof, typename Allocator>
-void fill_ones(HPM::Buffer<double, Mesh, Dof, Allocator>& vec) {
+template<typename Mesh, typename Dof, typename Allocator, typename T>
+void fill_scalar(HPM::Buffer<T, Mesh, Dof, Allocator>& vec, T scalar) {
     for(auto& value : vec) {
-        value = 1.0;
+        value = scalar;
     }
 }
 
+using BaseType = cl_double;
+
+using CoordinateType = HPM::dataType::Vec<BaseType, 3>;
 
 constexpr auto numVolNodes = 20;
 
 constexpr auto rk4 = std::array<std::array<double, 2>, 5>{
-    std::array<double, 2>{0.0, 1432997174477.0 / 9575080441755.0},
-    std::array<double, 2>{-567301805773.0 / 1357537059087.0, 5161836677717.0 / 13612068292357.0},
-    std::array<double, 2>{-2404267990393.0 / 2016746695238.0, 1720146321549.0 / 2090206949498.0},
-    std::array<double, 2>{-3550918686646.0 / 2091501179385.0, 3134564353537.0 / 4481467310338.0},
-    std::array<double, 2>{-1275806237668.0 / 842570457699.0, 2277821191437.0 / 14882151754819.0}};
+    std::array<double, 2>{0.0, 0.1496590219992291},
+    std::array<double, 2>{-0.4178904744998520, 0.3792103129996273},
+    std::array<double, 2>{-1.1921516946426769, 0.8229550293869817},
+    std::array<double, 2>{-1.6977846924715278, 0.6994504559491221},
+    std::array<double, 2>{-1.5141834442571558, 0.1530572479681520 }};
 
 constexpr auto derivative = Derivative {
     DerivativeBlock{Real3{Real{-3.0000000000000000e+00}, Real{-3.0000000000000000e+00}, Real{-3.0000000000000000e+00}},

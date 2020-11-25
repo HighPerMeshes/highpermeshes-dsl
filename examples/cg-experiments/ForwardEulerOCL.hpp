@@ -10,11 +10,11 @@
 using namespace HPM;
 
 template <typename Mesh, typename Buffers>
-auto ForwardEulerOCL(const Mesh &mesh, size_t iteration_mod, HPM::OpenCLHandler &hpm_ocl, Buffers& buffers)
+auto ForwardEulerOCL(const Mesh &mesh, size_t iteration_mod, HPM::OpenCLHandler &hpm_ocl, Buffers& buffers, size_t work_group_size)
 {
     std::fstream hpm_kernel_stream{"ForwardEuler.cl"};
     std::string hpm_kernel_string((std::istreambuf_iterator<char>(hpm_kernel_stream)), std::istreambuf_iterator<char>());
-    hpm_ocl.LoadKernelsFromString(hpm_kernel_string, {"function_1"});
+    hpm_ocl.LoadKernelsFromString(hpm_kernel_string, {"function_4"});
 
     const auto AllCells{
         mesh.template GetEntityRange<0>()};
@@ -42,7 +42,7 @@ auto ForwardEulerOCL(const Mesh &mesh, size_t iteration_mod, HPM::OpenCLHandler 
                        auto hpm_kernel_0 = kernel;
                        auto buffers_0 = GetBuffers(hpm_kernel_0);
                        auto offsets_0 = GetOffsets(hpm_kernel_0);
-                       auto hpm_ocl_kernel_0 = HPM::OpenCLKernelEnqueuer{hpm_ocl, "function_1", std::tuple<unsigned long>{0}, hpm_kernel_0.entity_range.GetSize(), 1}.with(buffers_0).with(offsets_0);
+                       auto hpm_ocl_kernel_0 = HPM::OpenCLKernelEnqueuer{hpm_ocl, "function_4", std::tuple<unsigned long>{0}, hpm_kernel_0.entity_range.GetSize(), work_group_size}.with(buffers_0).with(offsets_0);
                        HPM::OpenCLDispatcher{}.Dispatch(HPM::iterator::Range{iteration_mod}, hpm_ocl_kernel_0);
 
                        hpm_ocl.GetDefaultQueue().finish();

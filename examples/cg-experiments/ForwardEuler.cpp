@@ -31,7 +31,7 @@ int main()
 
     auto buffers = MakeTuple<2>(
         [&](auto) {
-            return hpm.GetBuffer<double>(mesh, Dofs);
+            return hpm.GetBuffer<CoordinateType>(mesh, Dofs);
         });
 
     SequentialDispatcher dispatcher;

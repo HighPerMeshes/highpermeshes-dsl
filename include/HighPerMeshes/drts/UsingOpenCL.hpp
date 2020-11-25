@@ -302,9 +302,12 @@ namespace HPM
             std::apply([this](auto &&... arg) { (Unmap(arg), ...); }, kernel_arguments); // eventually unmap the svm buffers
         }
 
+        void set_args() {
+            std::apply([this](auto &&... arg) { size_t arg_id(0); ((ocl.SetKernelArg(kernelName, arg_id++, arg)), ...); }, kernel_arguments);
+        }
+
         ProfCL enqueue()
         {
-            std::apply([this](auto &&... arg) { size_t arg_id(0); ((ocl.SetKernelArg(kernelName, arg_id++, arg)), ...); }, kernel_arguments);
             return ocl.EnqueueKernel(kernelName, wi_global_size, local_wi);
         };
 

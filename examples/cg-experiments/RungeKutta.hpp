@@ -34,26 +34,26 @@ auto RKKernel(Range &range, Buffers &buffers)
             auto &resE = std::get<5>(lvs);
 
             HPM::ForEach(numVolNodes, [&](const std::size_t n) {
-                resH[n] = RKstage[0] * resH[n] + /* timeStep * */ rhsH[n]; //!< residual fields
-                resE[n] = RKstage[0] * resE[n] + /* timeStep * */ rhsE[n];
+                resH[n] = RKstage[0] * resH[n] + rhsH[n]; //!< residual fields
+                resE[n] = RKstage[0] * resE[n] + rhsE[n];
+
                 fieldH[n] += RKstage[1] * resH[n]; //!< updated fields
+
                 fieldE[n] += RKstage[1] * resE[n];
-                assign_to_entries(rhsH[n], 0.0);
+                assign_to_entries(rhsH[n], 0.0); //TODO
                 assign_to_entries(rhsE[n], 0.0);
             });
         },
-        HPM::internal::OpenMP_ForEachEntity<3> {}
-        );
+        HPM::internal::OpenMP_ForEachEntity<3>{});
 }
 
-template<typename Mesh, typename Buffers>
-auto RungeKutta(const Mesh& mesh, size_t iteration_mod, Buffers& buffers)
+template <typename Mesh, typename Buffers>
+auto RungeKutta(const Mesh &mesh, size_t iteration_mod, Buffers &buffers)
 {
     static constexpr auto CellDimension = 3;
 
     const auto AllCells{
         mesh.template GetEntityRange<CellDimension>()};
-
 
     SequentialDispatcher dispatcher;
 
@@ -62,13 +62,11 @@ auto RungeKutta(const Mesh& mesh, size_t iteration_mod, Buffers& buffers)
     auto kernel = RKKernel(AllCells, buffers);
 
     return HPM::auxiliary::MeasureTime(
-        [&]() {
-            dispatcher.Execute(
-                HPM::iterator::Range { iteration_mod },
-                kernel
-            );
-        }
-    ).count();
-
+               [&]() {
+                   dispatcher.Execute(
+                       HPM::iterator::Range{iteration_mod},
+                       kernel);
+               })
+        .count();
 }
 #endif /* RUNGEKUTTA_HPP */

@@ -11,13 +11,13 @@
 using namespace HPM;
 
 template <typename Mesh, typename Buffers>
-auto RungeKuttaOCL(const Mesh &mesh, size_t iteration_mod, HPM::OpenCLHandler &hpm_ocl, Buffers& buffers)
+auto RungeKuttaOCL(const Mesh &mesh, size_t iteration_mod, HPM::OpenCLHandler &hpm_ocl, Buffers& buffers, size_t work_group_size, std::string file_name, std::string kernel_name)
 {
 
-    std::fstream hpm_kernel_stream{"RungeKutta.cl"};
+    std::fstream hpm_kernel_stream{ file_name};
     std::string hpm_kernel_string((std::istreambuf_iterator<char>(hpm_kernel_stream)), std::istreambuf_iterator<char>());
 
-    hpm_ocl.LoadKernelsFromString(hpm_kernel_string, {"function_17"});
+    hpm_ocl.LoadKernelsFromString(hpm_kernel_string, { kernel_name } );
 
     //The runtime determines the configuration of HighPerMeshes.
     //The GetBuffer class determines that we use a normal buffer to allocate space
@@ -42,10 +42,12 @@ auto RungeKuttaOCL(const Mesh &mesh, size_t iteration_mod, HPM::OpenCLHandler &h
     return HPM::auxiliary::MeasureTime(
                [&]() {
                    {
+
                        auto hpm_kernel_0 = kernel;
                        auto buffers_0 = GetBuffers(hpm_kernel_0);
                        auto offsets_0 = GetOffsets(hpm_kernel_0);
-                       auto hpm_ocl_kernel_0 = HPM::OpenCLKernelEnqueuer{hpm_ocl, "function_17", std::tuple<unsigned long>{0}, hpm_kernel_0.entity_range.GetSize(), 1}.with(buffers_0).with(offsets_0);
+
+                       auto hpm_ocl_kernel_0 = HPM::OpenCLKernelEnqueuer{hpm_ocl, kernel_name, std::tuple<unsigned long>{0}, hpm_kernel_0.entity_range.GetSize(), work_group_size}.with(buffers_0).with(offsets_0);
                        HPM::OpenCLDispatcher{}.Dispatch(HPM::iterator::Range{iteration_mod}, hpm_ocl_kernel_0);
 
                        hpm_ocl.GetDefaultQueue().finish();

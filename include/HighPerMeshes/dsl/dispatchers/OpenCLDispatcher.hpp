@@ -31,6 +31,7 @@ namespace HPM
         auto Dispatch(iterator::Range<IntegerT> range, OpenCLKernel &&... opencl_kernel)
         {
             (std::forward<OpenCLKernel>(opencl_kernel).unmap(), ...);
+            (std::forward<OpenCLKernel>(opencl_kernel).set_args(), ...);
 
             for (auto step : range)
             {
