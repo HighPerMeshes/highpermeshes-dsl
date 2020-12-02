@@ -8,6 +8,21 @@
 #include <random>
 #include "Grid.hpp"
 
+auto get_args(int argc, char ** argv) {
+
+    size_t mesh_mod = argc > 1 ? std::stoi(argv[1]) : 1;
+    size_t iteration_mod = argc > 2 ? std::stoi(argv[2]) : 1;
+    size_t work_group_size = argc > 3 ? std::stoi(argv[3]) : 256;
+
+    struct args {
+            size_t mesh_mod;
+            size_t iteration_mod; 
+            size_t work_group_size;
+    } res { mesh_mod, iteration_mod, work_group_size };
+
+    return res; 
+}
+
 template <typename What, size_t... Indices>
 auto make_tuple_impl(What &&what, std::index_sequence<Indices...> /* not_used */)
 {
@@ -200,6 +215,33 @@ template <
     typename Datatype,
     typename Mesh,
     typename Dofs,
+    typename SeqRuntime>
+auto PrepareSequentialBuffers(const Mesh& mesh, const Dofs& dofs, SeqRuntime& seq_runtime) {
+    return MakeTuple<Size>(
+        [&](auto) {
+            return seq_runtime.template GetBuffer<Datatype>(mesh, dofs);;
+        });
+}
+
+
+template <
+    size_t Size,
+    typename Datatype,
+    typename Mesh,
+    typename Dofs,
+    typename OclRuntime>
+auto PrepareOCLBuffers(const Mesh& mesh, const Dofs& dofs, OclRuntime& ocl_runtime, HPM::OpenCLHandler& ocl_handler) {
+    return MakeTuple<Size>(
+        [&](auto) {
+            return ocl_runtime.template GetBuffer<Datatype>(mesh, dofs, ocl_handler.GetSVMAllocator<Datatype>());
+        });
+}
+
+template <
+    size_t Size,
+    typename Datatype,
+    typename Mesh,
+    typename Dofs,
     typename SeqRuntime,
     typename OClRuntime>
 auto PrepareBuffers(
@@ -214,7 +256,7 @@ auto PrepareBuffers(
         MakeTuple<Size>(
         [&](auto) {
             auto buffer = seq_runtime.template GetBuffer<Datatype>(mesh, dofs);
-            fill_scalar(buffer, 10.0);
+            fill_scalar(buffer, 1.0);
             return buffer;
         }),
         MakeTuple<Size>(
@@ -282,6 +324,7 @@ using BaseType = double;
 using CoordinateType = HPM::dataType::Vec<BaseType, 3>;
 
 constexpr auto numVolNodes = 20;
+constexpr auto DGDofs = HPM::dof::MakeDofs<0,0,0,numVolNodes,0>();
 
 constexpr auto rk4 = std::array<std::array<double, 2>, 5>{
     std::array<double, 2>{0.0, 0.1496590219992291},

@@ -8,46 +8,27 @@
 
 using namespace HPM;
 
-int main()
+int main(int argc, char ** argv)
 {
-    //The runtime determines the configuration of HighPerMeshes.
-    //The GetBuffer class determines that we use a normal buffer to allocate space
-    drts::Runtime hpm{
-        GetBuffer{}};
+    SequentialDispatcher dispatcher;
+    
+    auto [mesh_mod, iteration_mod, work_group_size] = get_args(argc, argv);
 
-    Grid<3> grid{{10, 10, 10}};
+    Grid<3> grid{{10 * mesh_mod, 10, 10}};
+
+    HPM::drts::Runtime runtime{HPM::GetBuffer{}};
+
     const auto &mesh = grid.mesh;
 
-    // The next step initializes a mesh
-    // For this purpose we define a mesh class that needs two types as information: A CoordinateType that tells us which dimensionality the mesh has and how to store the coordinates and a topology class that can be used to define the mesh topology, i.e. how nodes are connected to each other.
-    // For this purpose we currently provide he Simplex class to define meshes for simplexes of any dimensionality
+    auto buffers = PrepareSequentialBuffers<4, CoordinateType>(mesh, DGDofs, runtime);
 
-    // The CoordinateType tells us which data type and which dimensionality to use for a given mesh.
-    using CoordinateType = dataType::Vec<double, 3>;
+    std::cout << "Volume\n";
+    std::cout << "Mesh Size: " << mesh.GetNumEntities<3>() << " Tetraedrons\n";
+    std::cout << "Iterations: " << iteration_mod << "\n";
+    std::cout << "Dofs: " << numVolNodes << "\n";
 
-    static constexpr auto CellDimension = 3;
+    const auto range{ mesh.template GetEntityRange<3>() };
 
-    const auto AllCells{
-        mesh.template GetEntityRange<CellDimension>()};
+    SequentialDispatcher{}.Execute(HPM::iterator::Range{ size_t { iteration_mod } }, VolumeKernel(range, buffers));
 
-    constexpr auto Dofs = dof::MakeDofs<0, 0, 0, numVolNodes, 0>();
-
-    auto buffers = MakeTuple<6>(
-        [&](auto) {
-            return hpm.GetBuffer<CoordinateType>(mesh, Dofs);
-        });
-
-    SequentialDispatcher dispatcher;
-
-    using namespace HPM::dataType;
-
-    auto kernel = VolumeKernel(AllCells, buffers);
-
-    return HPM::auxiliary::MeasureTime(
-               [&]() {
-                   dispatcher.Execute(
-                       HPM::iterator::Range{ size_t { 1 } },
-                       kernel);
-               })
-        .count();
 }

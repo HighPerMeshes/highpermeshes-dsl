@@ -46,6 +46,29 @@ namespace HPM
             (std::forward<OpenCLKernel>(opencl_kernel).map(), ...);
         }
 
+        template <typename... OpenCLKernel, typename IntegerT>
+        auto MeasureDispatch(iterator::Range<IntegerT> range, OpenCLKernel &&... opencl_kernel)
+        {
+            (std::forward<OpenCLKernel>(opencl_kernel).unmap(), ...);
+            (std::forward<OpenCLKernel>(opencl_kernel).set_args(), ...);
+
+            size_t measured = 0;
+
+            for (auto step : range)
+            {
+                (
+                    [&](auto& kernel) {
+                        kernel.updateArg(0, step);
+                        measured += kernel.enqueue().elapsed_ns();
+                    }(opencl_kernel)
+                , ...);
+            }
+
+            (std::forward<OpenCLKernel>(opencl_kernel).map(), ...);
+
+            return measured;
+        }
+
     };
 } // namespace HPM
 

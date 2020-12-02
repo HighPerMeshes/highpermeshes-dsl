@@ -10,45 +10,53 @@
 using namespace HPM;
 
 template <typename Mesh, typename Buffers>
-auto ForwardEulerOCL(const Mesh &mesh, size_t iteration_mod, HPM::OpenCLHandler &hpm_ocl, Buffers& buffers, size_t work_group_size)
+auto ForwardEulerOCL(const Mesh &mesh, size_t iteration_mod, HPM::OpenCLHandler &hpm_ocl, Buffers &buffers, size_t work_group_size)
 {
+    std::string kernel_name = {"function_1"};
     std::fstream hpm_kernel_stream{"ForwardEuler.cl"};
     std::string hpm_kernel_string((std::istreambuf_iterator<char>(hpm_kernel_stream)), std::istreambuf_iterator<char>());
-    hpm_ocl.LoadKernelsFromString(hpm_kernel_string, {"function_4"});
+    hpm_ocl.LoadKernelsFromString(hpm_kernel_string, {kernel_name});
 
-    const auto AllCells{
-        mesh.template GetEntityRange<0>()};
+    auto range = mesh.template GetEntityRange<0>();
 
-    SequentialDispatcher dispatcher;
+    auto kernel = ForwardEulerKernel(range, buffers);
 
-    auto kernel = HPM::ForEachEntity(
-        AllCells,
-        std::tuple(
-            ReadWrite(Node(std::get<0>(buffers))),
-            Read(Node(std::get<1>(buffers)))),
-        [&](const auto &, const auto &, auto &lvs) {
-            auto &u = std::get<0>(lvs);
-            const auto &u_d = std::get<1>(lvs);
+    auto measured_time = HPM::auxiliary::MeasureTime(
+                             [&]() {
+                                 {
+                                     auto hpm_kernel_0 = kernel;
+                                     auto buffers_0 = GetBuffers(hpm_kernel_0);
+                                     auto offsets_0 = GetOffsets(hpm_kernel_0);
+                                     auto hpm_ocl_kernel_0 = HPM::OpenCLKernelEnqueuer{hpm_ocl, kernel_name, std::tuple<unsigned long>{0}, hpm_kernel_0.entity_range.GetSize(), work_group_size}.with(buffers_0).with(offsets_0);
 
-            auto tau = 0.2;
+                                     HPM::OpenCLDispatcher{}.Dispatch(HPM::iterator::Range{iteration_mod}, hpm_ocl_kernel_0);
 
-            u[0] += tau * u_d[0];
-        },
-        HPM::internal::OpenMP_ForEachEntity<0>{});
+                                     hpm_ocl.GetDefaultQueue().finish();
+                                 };
+                             })
+                             .count();
 
-    return HPM::auxiliary::MeasureTime(
-               [&]() {
-                   {
-                       auto hpm_kernel_0 = kernel;
-                       auto buffers_0 = GetBuffers(hpm_kernel_0);
-                       auto offsets_0 = GetOffsets(hpm_kernel_0);
-                       auto hpm_ocl_kernel_0 = HPM::OpenCLKernelEnqueuer{hpm_ocl, "function_4", std::tuple<unsigned long>{0}, hpm_kernel_0.entity_range.GetSize(), work_group_size}.with(buffers_0).with(offsets_0);
-                       HPM::OpenCLDispatcher{}.Dispatch(HPM::iterator::Range{iteration_mod}, hpm_ocl_kernel_0);
+    return measured_time;
+}
 
-                       hpm_ocl.GetDefaultQueue().finish();
-                   };
-               })
-        .count();
+template <typename Mesh, typename Buffers>
+auto ForwardEulerOCLKernelTime(const Mesh &mesh, size_t iteration_mod, HPM::OpenCLHandler &hpm_ocl, Buffers &buffers, size_t work_group_size)
+{
+    std::string kernel_name = {"function_1"};
+    std::fstream hpm_kernel_stream{"ForwardEuler.cl"};
+    std::string hpm_kernel_string((std::istreambuf_iterator<char>(hpm_kernel_stream)), std::istreambuf_iterator<char>());
+    hpm_ocl.LoadKernelsFromString(hpm_kernel_string, {kernel_name});
+
+    auto range = mesh.template GetEntityRange<0>();
+
+    auto kernel = ForwardEulerKernel(range, buffers);
+
+    auto hpm_kernel_0 = kernel;
+    auto buffers_0 = GetBuffers(hpm_kernel_0);
+    auto offsets_0 = GetOffsets(hpm_kernel_0);
+    auto hpm_ocl_kernel_0 = HPM::OpenCLKernelEnqueuer{hpm_ocl, kernel_name, std::tuple<unsigned long>{0}, hpm_kernel_0.entity_range.GetSize(), work_group_size}.with(buffers_0).with(offsets_0);
+
+    return HPM::OpenCLDispatcher{}.MeasureDispatch(HPM::iterator::Range{iteration_mod}, hpm_ocl_kernel_0);
 }
 
 #endif /* FORWARDEULEROCL_HPP */

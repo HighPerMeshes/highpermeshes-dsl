@@ -44,74 +44,74 @@ int main(int argc, char **argv)
         std::cout << "}\n";
     }
 
-    {
+    // {
 
-        constexpr auto Dofs = dof::MakeDofs<0, 0, 0, numVolNodes, 0>();
+    //     constexpr auto Dofs = dof::MakeDofs<0, 0, 0, numVolNodes, 0>();
 
-        auto [buffers, ocl_buffers] = PrepareBuffers<6, CoordinateType>(mesh, Dofs, runtime, ocl_runtime, hpm_ocl);
+    //     auto [buffers, ocl_buffers] = PrepareBuffers<6, CoordinateType>(mesh, Dofs, runtime, ocl_runtime, hpm_ocl);
 
-        std::cout << "Runge Kutta: {\n";
+    //     std::cout << "Runge Kutta: {\n";
 
-        analyze(
-            RungeKutta(mesh, iteration_mod, buffers),
-            RungeKuttaOCL(mesh, iteration_mod, hpm_ocl, ocl_buffers, work_group_size, "RungeKutta.cl", "function_17"),
-            iteration_mod);
+    //     analyze(
+    //         RungeKutta(mesh, iteration_mod, buffers),
+    //         RungeKuttaOCL(mesh, iteration_mod, hpm_ocl, ocl_buffers, work_group_size, "RungeKutta.cl", "function_17"),
+    //         iteration_mod);
 
-        inequalities(buffers, ocl_buffers);
+    //     inequalities(buffers, ocl_buffers);
 
-        std::cout << "}\n";
-    }
+    //     std::cout << "}\n";
+    // }
 
-    {
+    // {
 
-        constexpr auto Dofs = dof::MakeDofs<0, 0, 0, numVolNodes, 0>();
+    //     constexpr auto Dofs = dof::MakeDofs<0, 0, 0, numVolNodes, 0>();
 
-        auto [buffers, ocl_buffers] = PrepareBuffers<6, CoordinateType>(mesh, Dofs, runtime, ocl_runtime, hpm_ocl);
+    //     auto [buffers, ocl_buffers] = PrepareBuffers<6, CoordinateType>(mesh, Dofs, runtime, ocl_runtime, hpm_ocl);
 
-        std::cout << "Runge Kutta (hand-written ocl): {\n";
+    //     std::cout << "Runge Kutta (hand-written ocl): {\n";
 
-        analyze(
-            RungeKutta(mesh, iteration_mod, buffers),
-            RungeKuttaOCL(mesh, iteration_mod, hpm_ocl, ocl_buffers, work_group_size, "RungeKutta-Hand.cl", "RK"),
-            iteration_mod);
+    //     analyze(
+    //         RungeKutta(mesh, iteration_mod, buffers),
+    //         RungeKuttaOCL(mesh, iteration_mod, hpm_ocl, ocl_buffers, work_group_size, "RungeKutta-Hand.cl", "RK"),
+    //         iteration_mod);
 
-        inequalities(buffers, ocl_buffers);
+    //     inequalities(buffers, ocl_buffers);
 
-        std::cout << "}\n";
-    }
+    //     std::cout << "}\n";
+    // }
 
-    {
+    // {
 
-        constexpr auto Dofs = dof::MakeDofs<0, 0, 0, numVolNodes, 0>();
+    //     constexpr auto Dofs = dof::MakeDofs<0, 0, 0, numVolNodes, 0>();
 
-        auto [buffers, ocl_buffers] = PrepareBuffers<6, CoordinateType>(mesh, Dofs, runtime, ocl_runtime, hpm_ocl);
+    //     auto [buffers, ocl_buffers] = PrepareBuffers<6, CoordinateType>(mesh, Dofs, runtime, ocl_runtime, hpm_ocl);
 
-        std::cout << "Runge Kutta Stripped: {\n";
+    //     std::cout << "Runge Kutta Stripped: {\n";
 
-        analyze(
-            RungeKuttaStripped(mesh, iteration_mod, buffers),
-            RungeKuttaOCL(mesh, iteration_mod, hpm_ocl, ocl_buffers, work_group_size, "RungeKutta.cl", "function_17"),
-            iteration_mod);
+    //     analyze(
+    //         RungeKuttaStripped(mesh, iteration_mod, buffers),
+    //         RungeKuttaOCL(mesh, iteration_mod, hpm_ocl, ocl_buffers, work_group_size, "RungeKutta.cl", "function_17"),
+    //         iteration_mod);
 
-        inequalities(buffers, ocl_buffers);
+    //     inequalities(buffers, ocl_buffers);
 
-        std::cout << "}\n";
-    }
+    //     std::cout << "}\n";
+    // }
 
-    {
+    // {
 
-        constexpr auto Dofs = dof::MakeDofs<0, 0, 0, numVolNodes, 0>();
+    //     constexpr auto Dofs = dof::MakeDofs<0, 0, 0, numVolNodes, 0>();
 
-        auto [buffers, ocl_buffers] = PrepareBuffers<4, CoordinateType>(mesh, Dofs, runtime, ocl_runtime, hpm_ocl);
+    //     auto [buffers, ocl_buffers] = PrepareBuffers<4, CoordinateType>(mesh, Dofs, runtime, ocl_runtime, hpm_ocl);
 
-        std::cout << "Volume: {\n";
+    //     std::cout << "Volume: {\n";
 
-        analyze(
-            Volume(mesh, iteration_mod, buffers),
-            VolumeOCL(mesh, iteration_mod, hpm_ocl, ocl_buffers, work_group_size),
-            iteration_mod);
+    //     analyze(
+    //         Volume(mesh, iteration_mod, buffers),
+    //         VolumeOCL(mesh, iteration_mod, hpm_ocl, ocl_buffers, work_group_size),
+    //         iteration_mod);
 
-        inequalities(ocl_buffers, buffers);
-        std::cout << "}\n";
-    }
+    //     inequalities(ocl_buffers, buffers);
+    //     std::cout << "}\n";
+    // }
 }

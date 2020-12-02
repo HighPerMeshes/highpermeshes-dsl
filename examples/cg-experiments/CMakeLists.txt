@@ -21,19 +21,17 @@ function( Experiment name )
     )    
 endfunction()
 
-Experiment(Experiments)
-
 Experiment(ForwardEuler)
 Experiment(RungeKutta)
 Experiment(Volume)
 
-Experiment(ExperimentForwardEuler)
-Experiment(ExperimentInitialization)
-Experiment(ExperimentRKHandWrittenOCL)
-Experiment(ExperimentRKStripped)
-Experiment(ExperimentRungeKutta)
-Experiment(ExperimentVolume)
+Experiment(BandwidthForwardEuler)
+Experiment(BandwidthRungeKutta)
+Experiment(BandwidthVolume)
 
+Experiment(SpeedupForwardEuler)
+Experiment(SpeedupRungeKutta)
+Experiment(SpeedupVolume)
 
 configure_file(ForwardEuler.cl ForwardEuler.cl COPYONLY)
 configure_file(RungeKutta.cl RungeKutta.cl COPYONLY)
