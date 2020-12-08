@@ -1,6 +1,7 @@
 #include "help.hpp"
 
 #include "RungeKutta.hpp"
+#include "RungeKuttaStripped.hpp"
 #include "RungeKuttaOCL.hpp"
 
 using namespace HPM;
@@ -16,10 +17,10 @@ int main(int argc, char **argv)
 
         std::cout << "Dofs: " << numVolNodes << "\n";
 
-        std::cout << "Runge Kutta: {\n";
+        std::cout << "Runge Kutta Stripped: {\n";
 
          analyze(
-            RungeKutta(mesh, iteration_mod, buffers),
+            RungeKuttaStripped(mesh, iteration_mod, buffers),
             RungeKuttaOCL(mesh, iteration_mod, hpm_ocl, ocl_buffers, work_group_size, "RungeKutta.cl", "function_17"),
             iteration_mod
         );

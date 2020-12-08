@@ -18,7 +18,7 @@ int main(int argc, char **argv)
 
         std::cout << "Forward Euler\n";
 
-        auto kernel_time = ForwardEulerOCLKernelTime(mesh, iteration_mod, hpm_ocl, ocl_buffers, work_group_size);
+        auto kernel_time = ForwardEulerOCLKernelTime(mesh, iteration_mod, hpm_ocl, ocl_buffers, work_group_size, "ForwardEuler.cl", "function_1");
 
         size_t reads = 2;
         size_t writes = 1;

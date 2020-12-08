@@ -21,7 +21,13 @@ function( Experiment name )
     )    
 endfunction()
 
+function ( Kernel name )
+    configure_file(${name} ${name} COPYONLY)
+endfunction()
+
+
 Experiment(ForwardEuler)
+Experiment(ForwardEulerVector)
 Experiment(RungeKutta)
 Experiment(Volume)
 
@@ -30,11 +36,14 @@ Experiment(BandwidthRungeKutta)
 Experiment(BandwidthVolume)
 
 Experiment(SpeedupForwardEuler)
+Experiment(SpeedupForwardEulerVector)
 Experiment(SpeedupRungeKutta)
+Experiment(SpeedupRungeKuttaStripped)
+Experiment(SpeedupRungeKuttaHandWrittenOCL)
 Experiment(SpeedupVolume)
 
-configure_file(ForwardEuler.cl ForwardEuler.cl COPYONLY)
-configure_file(RungeKutta.cl RungeKutta.cl COPYONLY)
-configure_file(Volume.cl Volume.cl COPYONLY)
-configure_file(memcopy.cl memcopy.cl COPYONLY)
-configure_file(id_assign.cl id_assign.cl COPYONLY)
+Kernel(ForwardEuler.cl)
+Kernel(ForwardEulerVector.cl)
+Kernel(RungeKutta.cl)
+Kernel(RungeKuttaHandWritten.cl)
+Kernel(Volume.cl)

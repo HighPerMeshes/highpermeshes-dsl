@@ -5,8 +5,11 @@
 #include <tuple>
 #include <HighPerMeshes.hpp>
 #include <HighPerMeshes/drts/UsingOpenCL.hpp>
+#include <HighPerMeshes/auxiliary/HelperFunctions.hpp>
 #include <random>
 #include "Grid.hpp"
+
+
 
 auto get_args(int argc, char ** argv) {
 
@@ -318,6 +321,52 @@ auto PrepareRuntimes(size_t mesh_mod, size_t iteration_mod, size_t work_group_si
     return result;
 }
 
+auto load_kernel(HPM::OpenCLHandler &hpm_ocl, std::string file_name, std::string kernel_name)
+{
+
+    std::fstream hpm_kernel_stream{file_name};
+    std::string hpm_kernel_string((std::istreambuf_iterator<char>(hpm_kernel_stream)), std::istreambuf_iterator<char>());
+    hpm_ocl.LoadKernelsFromString(hpm_kernel_string, {kernel_name});
+}
+
+
+template <typename Kernel, typename AdditionalArg>
+auto MeasureOCL(HPM::OpenCLHandler &hpm_ocl, std::string kernel_name, Kernel &kernel, size_t iteration_mod, size_t work_group_size, AdditionalArg&& arg)
+{
+
+    return HPM::auxiliary::MeasureTime(
+               [&]() {
+                   {
+                       auto buffers = GetBuffers(kernel);
+                       auto offsets = GetOffsets(kernel);
+                       auto ocl_kernel = HPM::OpenCLKernelEnqueuer{hpm_ocl, kernel_name, std::tuple<unsigned long>{0}, kernel.entity_range.GetSize(), work_group_size}.with(buffers).with(offsets).with(std::forward<AdditionalArg>(arg));
+
+                       HPM::OpenCLDispatcher{}.Dispatch(HPM::iterator::Range{iteration_mod}, ocl_kernel);
+
+                       hpm_ocl.GetDefaultQueue().finish();
+                   };
+               })
+        .count();
+}
+
+template <typename Kernel>
+auto MeasureOCL(HPM::OpenCLHandler &hpm_ocl, std::string kernel_name, Kernel &kernel, size_t iteration_mod, size_t work_group_size)
+{
+
+    return HPM::auxiliary::MeasureTime(
+               [&]() {
+                   {
+                       auto buffers = GetBuffers(kernel);
+                       auto offsets = GetOffsets(kernel);
+                       auto ocl_kernel = HPM::OpenCLKernelEnqueuer{hpm_ocl, kernel_name, std::tuple<unsigned long>{0}, kernel.entity_range.GetSize(), work_group_size}.with(buffers).with(offsets);
+
+                       HPM::OpenCLDispatcher{}.Dispatch(HPM::iterator::Range{iteration_mod}, ocl_kernel);
+
+                       hpm_ocl.GetDefaultQueue().finish();
+                   };
+               })
+        .count();
+}
 
 using BaseType = double;
 

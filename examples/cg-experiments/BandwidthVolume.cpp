@@ -18,7 +18,7 @@ int main(int argc, char **argv)
 
         std::cout << "Volume\n";
 
-        auto kernel_time = VolumeOCLKernelTime(mesh, iteration_mod, hpm_ocl, ocl_buffers, work_group_size);
+        auto kernel_time = VolumeOCLKernelTime(mesh, iteration_mod, hpm_ocl, ocl_buffers, work_group_size, "Volume.cl", "function_30");
 
         size_t reads = 2;
         size_t writes = 4;

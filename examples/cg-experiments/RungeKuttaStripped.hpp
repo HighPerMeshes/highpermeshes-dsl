@@ -32,7 +32,7 @@ auto RungeKuttaStripped(const Mesh& mesh, size_t iteration_mod, Buffers &buffers
     auto measured = HPM::auxiliary::MeasureTime(
         [&]() {
             
-            for(size_t iter; iter < iteration_mod; ++iter) {
+            for(size_t iter = 0; iter < iteration_mod; ++iter) {
 
                 #pragma omp parallel for
                 for(size_t cell = 0; cell < mesh.template GetNumEntities<3>(); ++cell) {
@@ -45,8 +45,8 @@ auto RungeKuttaStripped(const Mesh& mesh, size_t iteration_mod, Buffers &buffers
                     auto &resH = std::get<4>(buffers);
                     auto &resE = std::get<5>(buffers);
 
-                    HPM::ForEach(numVolNodes, [&](const std::size_t n_) {
-                        
+                    for(size_t n_ = 0; n_ < numVolNodes; ++n_) {
+
                         size_t n = n_ + numVolNodes * cell;
 
                         resH[n] = RKstage[0] * resH[n] + /* timeStep * */ rhsH[n]; //!< residual fields
@@ -55,7 +55,8 @@ auto RungeKuttaStripped(const Mesh& mesh, size_t iteration_mod, Buffers &buffers
                         fieldE[n] += RKstage[1] * resE[n];
                         assign_to_entries(rhsH[n], 0.0);
                         assign_to_entries(rhsE[n], 0.0);
-                    });
+
+                    }
                 }
             }
         }

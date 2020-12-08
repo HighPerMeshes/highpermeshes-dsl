@@ -20,23 +20,9 @@ int main(int argc, char **argv)
 
         analyze(
             Volume(mesh, iteration_mod, buffers),
-            VolumeOCL(mesh, iteration_mod, hpm_ocl, ocl_buffers, work_group_size),
+            VolumeOCL(mesh, iteration_mod, hpm_ocl, ocl_buffers, work_group_size, "Volume.cl", "function_30"),
             iteration_mod
         );
-
-        // inequalities(buffers, ocl_buffers);
-
-        // auto [measured_time, kernel_time] = VolumeOCL(mesh, iteration_mod, hpm_ocl, ocl_buffers, work_group_size);
-
-        // size_t reads = 2;
-        // size_t writes = 4;
-        // size_t data_size = sizeof(CoordinateType);
-        // size_t entries = Dofs.Get()[3] * mesh.GetNumEntities<3>();
-        // size_t bytes = (reads + writes) * data_size * entries;
-
-        // double avg_kernel_time = double { kernel_time } / iteration_mod; 
-
-        // std::cout << "Avg Kernel Time: " << avg_kernel_time << " ns , data: " << bytes << " Bytes, " << double { bytes } / avg_kernel_time << " GB / s\n"; 
 
         std::cout << "}\n";
     }

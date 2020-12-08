@@ -12,15 +12,15 @@ int main(int argc, char **argv)
     const auto &mesh = grid.mesh;
 
     {
-        auto [buffers, ocl_buffers] = PrepareBuffers<2, EulerType>(mesh, EulerDofs, runtime, ocl_runtime, hpm_ocl);
+        auto [buffers, ocl_buffers] = PrepareBuffers<2, CoordinateType>(mesh, EulerDofs, runtime, ocl_runtime, hpm_ocl);
         
         std::cout << "Dofs: " << NumEulerDofs << "\n";
 
-        std::cout << "Forward Euler Scalar: {\n";
+        std::cout << "Forward Euler Vector: {\n";
 
         analyze(
             ForwardEuler(mesh, iteration_mod, buffers),
-            ForwardEulerOCL(mesh, iteration_mod, hpm_ocl, ocl_buffers, work_group_size, "ForwardEuler.cl", "function_1"),
+            ForwardEulerOCL(mesh, iteration_mod, hpm_ocl, ocl_buffers, work_group_size, "ForwardEulerVector.cl", "function_4"),
             iteration_mod
         );
 

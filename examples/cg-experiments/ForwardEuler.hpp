@@ -10,7 +10,7 @@
 using namespace HPM;
 
 using EulerType = double;
-constexpr auto NumEulerDofs = 20;
+constexpr auto NumEulerDofs = 1;
 constexpr auto EulerDofs = dof::MakeDofs<NumEulerDofs, 0, 0, 0, 0>();
 
 template <typename Range, typename Buffers>
