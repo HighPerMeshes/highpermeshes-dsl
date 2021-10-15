@@ -91,7 +91,7 @@ namespace HPM::internal
             const auto& considered_entity = access.pattern(entity);
             constexpr size_t ConsideredDimension = std::decay_t<decltype(considered_entity)>::Dimension;
 
-            assert(dofs[RequestedDofDimension] != 0);
+            assert(dofs.Get()[RequestedDofDimension] != 0);
 
             if constexpr(RequestedDofDimension == CellDimension + 1) {
                 return GetLocalBuffer(access, dofs.At(RequestedDofDimension));
